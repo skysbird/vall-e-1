@@ -765,6 +765,7 @@ class VALLE(VALLF):
         x_lens: torch.Tensor,
         y: Union[torch.Tensor, PromptedFeatures],
         y_lens: Union[torch.Tensor, PromptedFeatures],
+        language_id: torch.Tensor,
         reduction: str = "sum",
         train_stage: int = 0,
         **kwargs,
@@ -788,6 +789,7 @@ class VALLE(VALLF):
         """
         assert x.ndim == 2, x.shape
         assert x_lens.ndim == 1, x_lens.shape
+        #print(y.size())
 
         y_prompts_codes = None
         if isinstance(y, PromptedFeatures):
@@ -860,7 +862,20 @@ class VALLE(VALLF):
             new_attn_mask.masked_fill_(xy_attn_mask, float("-inf"))
             xy_attn_mask = new_attn_mask
 
+            #print(y.size())
+
             y_emb = self.ar_audio_embedding(y)
+
+            # adding language id to audio token embedding
+            language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
+
+            y_emb = y_emb + language_id_exp
+            #print(y_emb.size())
+            #print(y_len)
+            #print(src_len)
+            #print(language_id.size())
+
+
             y_emb = self.ar_audio_prenet(y_emb)
             y_pos = self.ar_audio_position(y_emb)
 

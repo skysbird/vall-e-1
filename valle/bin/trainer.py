@@ -512,6 +512,7 @@ def compute_loss(
         if isinstance(model, DDP)
         else next(model.parameters()).device
     )
+    #print(batch)
     # at entry, TextTokens is (N, P)
     text_tokens = batch["text_tokens"].to(device)
     text_tokens_lens = batch["text_tokens_lens"].to(device)
@@ -521,12 +522,15 @@ def compute_loss(
     audio_features_lens = batch["audio_features_lens"].to(device)
     assert audio_features.ndim == 3
 
+    language_id = batch["language"].to(device)
+
     with torch.set_grad_enabled(is_training):
         predicts, loss, metrics = model(
             x=text_tokens,
             x_lens=text_tokens_lens,
             y=audio_features,
             y_lens=audio_features_lens,
+            language_id=language_id,
             train_stage=params.train_stage,
         )
 
@@ -1020,10 +1024,30 @@ def run(rank, world_size, args):
     )
     valid_dl = dataset.valid_dataloaders(valid_cuts)
 
+
+
+    #pair language dl
+    #dataset_p = TtsDataModule(args)
+    #train_cuts_p = dataset_p.train_cuts()
+    #valid_cuts_p = dataset_p.dev_cuts()
+
+    #train_cuts_p = filter_short_and_long_utterances(
+    #    train_cuts_p, params.filter_min_duration, params.filter_max_duration
+    #)
+    #valid_cuts_p = filter_short_and_long_utterances(
+    #    valid_cuts_p, params.filter_min_duration, params.filter_max_duration
+    #)
+
+    #train_dl_p = dataset.train_dataloaders(
+    #    train_cuts_p, sampler_state_dict=sampler_state_dict
+    #)
+    #valid_dl_p = dataset.valid_dataloaders(valid_cuts_p)
+
+
     if params.oom_check:
         scan_pessimistic_batches_for_oom(
             model=model,
-            train_dl=train_dl,
+            train_dl=train_dl, 
             optimizer=optimizer,
             params=params,
         )
@@ -1078,6 +1102,8 @@ def run(rank, world_size, args):
     if world_size > 1:
         torch.distributed.barrier()
         cleanup_dist()
+
+
 
 
 def display_and_save_batch(

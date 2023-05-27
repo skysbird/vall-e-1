@@ -29,6 +29,9 @@ from lhotse.utils import ifnone
 
 from valle.data.collation import TextTokenCollater
 
+LAN_ID_DICT = {}
+LAN_ID_DICT['Chinese'] = 0;
+LAN_ID_DICT['English'] = 1;
 
 class SpeechSynthesisDataset(torch.utils.data.Dataset):
     """
@@ -90,7 +93,11 @@ class SpeechSynthesisDataset(torch.utils.data.Dataset):
         text_tokens, text_tokens_lens = self.text_token_collater(
             [cut.supervisions[0].custom["tokens"]["text"] for cut in cuts]
         )
+    
 
+        #torch.IntTensor
+
+        language_id = [LAN_ID_DICT[cut.supervisions[0].language] for cut in cuts]
         return {
             "utt_id": [cut.id for cut in cuts],
             "text": [cut.supervisions[0].text for cut in cuts],
@@ -100,6 +107,7 @@ class SpeechSynthesisDataset(torch.utils.data.Dataset):
             "audio_features_lens": audio_features_lens,
             "text_tokens": text_tokens,
             "text_tokens_lens": text_tokens_lens,
+            "language": torch.IntTensor(language_id)
         }
 
 
