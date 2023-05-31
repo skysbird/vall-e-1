@@ -979,6 +979,7 @@ class VALLE(VALLF):
         x_lens: torch.Tensor,
         y: torch.Tensor,
         enroll_x_lens: torch.Tensor,
+        language_id: torch.Tensor,
         top_k: int = -100,
         temperature: float = 1.0,
     ) -> torch.Tensor:
@@ -1026,11 +1027,19 @@ class VALLE(VALLF):
 
         while True:
             y_emb = self.ar_audio_embedding(y)
+            y_len = y.shape[1]
+            # adding language id to audio token embedding
+            print(y_emb.size())
+            print(language_id.size())
+            language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
+            print(language_id_exp.size())
+            y_emb = y_emb + language_id_exp
+            print(y_emb.size())
+
             y_emb = self.ar_audio_prenet(y_emb)
             y_pos = self.ar_audio_position(y_emb)
             xy_pos = torch.concat([x, y_pos], dim=1)
 
-            y_len = y.shape[1]
             x_attn_mask_pad = F.pad(
                 x_attn_mask,
                 (0, y_len),

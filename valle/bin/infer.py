@@ -122,6 +122,10 @@ def get_args():
 
     return parser.parse_args()
 
+LAN_ID_DICT = {}
+LAN_ID_DICT['Chinese'] = 1;
+LAN_ID_DICT['English'] = 2;
+language_id = [2] #must []
 
 @torch.no_grad()
 def main():
@@ -214,6 +218,7 @@ def main():
                     audio_prompts,
                     enroll_x_lens=enroll_x_lens,
                     top_k=args.top_k,
+                    language_id=torch.IntTensor(language_id).to(device),
                     temperature=args.temperature,
                 )
 
@@ -277,6 +282,7 @@ def main():
                 all_text_tokens_lens.to(device),
                 audio_prompts,
                 enroll_x_lens=enroll_x_lens,
+                language_id=torch.IntTensor(language_id).to(device),
                 top_k=args.top_k,
                 temperature=args.temperature,
             )
