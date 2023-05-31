@@ -60,11 +60,13 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
   # to $dl_dir/LibriTTS
   mkdir -p data/manifests
   if [ ! -e data/manifests/.libritts.done ]; then
+    log "Stage 1: Prepare LibriTTS"
     lhotse prepare libritts ${dataset_parts} -j $nj $dl_dir/LibriTTS data/manifests
     touch data/manifests/.libritts.done
   fi
 
   if [ ! -e data/manifests/.aishell.done ]; then
+    log "Stage 1: Prepare aishell manifest"
     lhotse prepare aishell $dl_dir/aishell data/manifests
     touch data/manifests/.aishell.done
   fi
@@ -120,7 +122,7 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
         ${audio_feats_dir}/cuts_train.jsonl.gz
 
       # dev
-      lhotse copy \
+      lhotse combine \
         ${audio_feats_dir}/aishell_cuts_dev_400.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_dev-clean.jsonl.gz \
         ${audio_feats_dir}/cuts_dev.jsonl.gz
@@ -136,7 +138,7 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
     fi
 
     # test
-    lhotse copy \
+    lhotse combine \
       ${audio_feats_dir}/aishell_cuts_test.jsonl.gz \
       ${audio_feats_dir}/libritts_cuts_test-clean.jsonl.gz \
       ${audio_feats_dir}/cuts_test.jsonl.gz

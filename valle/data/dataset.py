@@ -30,8 +30,8 @@ from lhotse.utils import ifnone
 from valle.data.collation import TextTokenCollater
 
 LAN_ID_DICT = {}
-LAN_ID_DICT['Chinese'] = 0;
-LAN_ID_DICT['English'] = 1;
+LAN_ID_DICT['Chinese'] = 1;
+LAN_ID_DICT['English'] = 2;
 
 class SpeechSynthesisDataset(torch.utils.data.Dataset):
     """
