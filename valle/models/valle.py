@@ -759,6 +759,11 @@ class VALLE(VALLF):
             **kwargs,
         )
 
+        self.lang_embedding = nn.Embedding(d_model, NUM_AUDIO_TOKENS +  int(self.ar_audio_prepend_bos))
+        #self.language_ids = torch.tensor([1, 2])
+        
+
+
     def forward(
         self,
         x: torch.Tensor,
@@ -866,10 +871,14 @@ class VALLE(VALLF):
 
             y_emb = self.ar_audio_embedding(y)
 
+            
             # adding language id to audio token embedding
-            language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
+            language_id_exp = self.lang_embedding(language_id)
+            #language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
 
-            y_emb = y_emb + language_id_exp
+            #print(y_emb.size())
+            #print(language_id_exp.size())
+            y_emb = y_emb + language_id_exp.unsqueeze(1).expand(-1,y_len,-1)
             #print(y_emb.size())
             #print(y_len)
             #print(src_len)
@@ -1030,11 +1039,15 @@ class VALLE(VALLF):
             y_len = y.shape[1]
             # adding language id to audio token embedding
             print(y_emb.size())
-            print(language_id.size())
-            language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
-            print(language_id_exp.size())
-            y_emb = y_emb + language_id_exp
-            print(y_emb.size())
+            #print(language_id.size())
+            #language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
+            #print(language_id_exp.size())
+
+            language_id_exp = self.lang_embedding(language_id)
+            y_emb = y_emb + language_id_exp.unsqueeze(1).expand(-1,y_len,-1)
+
+            #y_emb = y_emb + language_id_exp
+            #print(y_emb.size())
 
             y_emb = self.ar_audio_prenet(y_emb)
             y_pos = self.ar_audio_position(y_emb)

@@ -55,6 +55,7 @@ def get_args():
         help="Text prompts which are separated by |.",
     )
 
+
     parser.add_argument(
         "--audio-prompts",
         type=str,
@@ -125,7 +126,7 @@ def get_args():
 LAN_ID_DICT = {}
 LAN_ID_DICT['Chinese'] = 1;
 LAN_ID_DICT['English'] = 2;
-language_id = [2] #must []
+language_id = [1] #must []
 
 @torch.no_grad()
 def main():
@@ -138,6 +139,7 @@ def main():
     if torch.cuda.is_available():
         device = torch.device("cuda", 0)
 
+    print(args)
     model = get_model(args)
     if args.checkpoint:
         checkpoint = torch.load(args.checkpoint, map_location=device)
@@ -193,7 +195,7 @@ def main():
                 ttext_tokens, ttext_tokens_lens = text_collater(
                     [
                         tokenize_text(
-                            text_tokenizer, text=f"{text}".strip()
+                           text_tokenizer, text=f"{text}".strip()
                         )
                     ]
                 )
@@ -243,21 +245,21 @@ def main():
         ttext_tokens, ttext_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    text_tokenizer, text=f"{text}".strip()
+                   cn_text_tokenizer, text=f"{text}".strip()
                 )
             ]
         )
 
 
-        print(text_tokens.size())
-        print(ttext_tokens.size())
+        #print(text_tokens.size())
+        #print(ttext_tokens.size())
 
         all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
-        print(all_text_tokens.size())
-        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens
-        print(text_tokens_lens)
-        print(ttext_tokens_lens)
-        print(all_text_tokens_lens)
+        #print(all_text_tokens.size())
+        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
+        #print(text_tokens_lens)
+        #print(ttext_tokens_lens)
+        #print(all_text_tokens_lens)
 
         # synthesis
         if args.continual:

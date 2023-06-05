@@ -139,6 +139,7 @@ def main():
         types=["recordings", "supervisions", "cuts"],
     )
 
+    #print(eng_manifests)
 
     cn_manifests = read_manifests_if_cached(
         dataset_parts=cn_dataset_parts,
@@ -147,6 +148,9 @@ def main():
         suffix=args.suffix,
         types=["recordings", "supervisions", "cuts"],
     )
+
+    print(cn_manifests)
+    print(args)
 
 
     #text_tokenizer = None
@@ -219,7 +223,7 @@ def main():
         #if prefix and not prefix.endswith("_"):
         #    prefix = f"{prefix}_"
         manifests = manifests_dict[prefix]
-
+        print(manifests)
         with get_executor() as ex:
             for partition, m in manifests.items():
                 logging.info(
