@@ -110,6 +110,20 @@ def get_args():
     return parser.parse_args()
 
 
+def remove_short_and_long_utt(c):
+    # Keep only utterances with duration between 1 second and 15.0 seconds
+    #
+    # Caution: There is a reason to select 15.0 here. Please see
+    # ../local/display_manifest_statistics.py
+    #
+    # You should use ../local/display_manifest_statistics.py to get
+    # an utterance duration distribution for your dataset to select
+    # the threshold
+    return c.duration <=10.0  or c.duration >= 20.0
+
+#train_cuts = train_cuts.filter(remove_short_and_long_utt)
+
+
 def main():
     args = get_args()
     args.manifest_dir = Path("data/tokenized")
@@ -127,7 +141,7 @@ def main():
         ]
 
     #-p train -p dev -p test
-    cn_dataset_parts = ['train','dev','test']
+    cn_dataset_parts = ['train','test']
 
     assert len(dataset_parts) >= 1
 
@@ -144,13 +158,12 @@ def main():
     cn_manifests = read_manifests_if_cached(
         dataset_parts=cn_dataset_parts,
         output_dir=args.src_dir,
-        prefix="aishell",
+        prefix="aishell3",
         suffix=args.suffix,
-        types=["recordings", "supervisions", "cuts"],
+        types=[ "recordings", "supervisions", "cuts"],
     )
 
-    print(cn_manifests)
-    print(args)
+    #print(args)
 
 
     #text_tokenizer = None
@@ -169,13 +182,13 @@ def main():
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     unique_symbols = set()
     #num_jobs = min(32, os.cpu_count())
-    num_jobs = 0
+    num_jobs = 6
     #logging.info(f"dataset_parts: {dataset_parts} manifests {len(manifests)}")
 
 
     manifests_dict = {
             'libritts':eng_manifests,
-            'aishell':cn_manifests
+            'aishell3':cn_manifests
             }
 
     #pre process for token
@@ -217,13 +230,13 @@ def main():
 
     #prefix = args.prefix
     #临时修改两个语言的prefix,先写死
-    prefixs = ['libritts','aishell']
-    #prefixs = ['aishell']
+    #
+    prefixs = ['aishell3','libritts']
+    #prefixs = ['wenetspeech']
     for prefix in prefixs:
         #if prefix and not prefix.endswith("_"):
         #    prefix = f"{prefix}_"
         manifests = manifests_dict[prefix]
-        print(manifests)
         with get_executor() as ex:
             for partition, m in manifests.items():
                 logging.info(
@@ -234,7 +247,8 @@ def main():
                         recordings=m["recordings"],
                         supervisions=m["supervisions"],
                     )
-                except Exception:
+
+                except Exception as e:
                     cut_set = m["cuts"]
 
                 # AudioTokenizer
@@ -248,7 +262,7 @@ def main():
                             f"{args.output_dir}/{prefix}_fbank_{partition}"
                         )
 
-                    if prefix.lower() in ["ljspeech", "aishell", "baker"]:
+                    if prefix.lower() in ["ljspeech", "aishell3", "baker","wenetspeech"]:
                         cut_set = cut_set.resample(24000)
                         # https://github.com/lifeiteng/vall-e/issues/90
                         # if args.prefix == "aishell":
