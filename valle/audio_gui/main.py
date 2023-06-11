@@ -18,16 +18,6 @@ from aliyunsdkalimt.request.v20181012 import TranslateGeneralRequest
 app = Flask(__name__)
 
 
-URL="wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1"
-TOKEN="f662ec88b99649f69991835ebccc600f"
-APPKEY="" 
-
-
-client = AcsClient(
-   "LTAI5tFv8dSiZTjs4cKFVmsF",
-   "", # 阿里云账号Access Key Secret
-   "cn-hangzhou"  # 地域ID
-);
 
 
 import threading
@@ -179,12 +169,141 @@ def trans(src):
     return data['Data']['Translated']
     
    
+from icefall.utils import AttributeDict, str2bool
+from valle.data import (
+    AudioTokenizer,
+    TextTokenizer,
+    tokenize_audio,
+    tokenize_text,
+)
+from valle.data.collation import get_text_token_collater
+from valle.models import add_model_arguments, get_model
+import torch
+
+#python3 bin/infer.py --output-dir infer/demos     --model-name valle --norm-first true --add-prenet false     --share-embedding true --norm-first true --add-prenet false     --text-prompts "甚至 出现 交易 几乎 停 滞 的 情况"     --audio-prompts ./prompts/ch_24k.wav     --text "There was even a situation where the transaction almost stagnated."     --checkpoint=${exp_dir}/best-valid-loss.pt
+
+def infer(prompt_text,prompt_wav,target_text):
+    args = AttributeDict()
+    text_tokenizer = TextTokenizer(backend="espeak")
+    text_collater = get_text_token_collater("data/tokenized/unique_text_tokens.k2symbols")
+    audio_tokenizer = AudioTokenizer()
+
+    device = torch.device("cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda", 0)
+
+    args.model_name = "valle"
+    args.norm_first = True
+    args.add_prenet = False
+    args.share_embedding = True
+    args.text_prompts = prompt_text
+    args.audio_prompts = prompt_wav 
+    args.text = target_text
+    args.checkpoint="best-valid-loss.pt"
+    args.output_dir = "output"
+    args.decoder_dim = 1024
+    args.nhead = 16
+    args.num_decoder_layers = 12
+    args.scale_factor = 1
+    args.prefix_mode = 0
+    args.prepend_bos = False
+    args.num_quantizers = 8
+    args.scaling_xformers = False
+
+    model = get_model(args)
+    if args.checkpoint:
+        checkpoint = torch.load(args.checkpoint, map_location=device)
+        missing_keys, unexpected_keys = model.load_state_dict(
+            checkpoint["model"], strict=True
+        )
+        assert not missing_keys
+        # from icefall.checkpoint import save_checkpoint
+        # save_checkpoint(f"{args.checkpoint}", model=model)
+
+    model.to(device)
+    model.eval()
+
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+
+    text_prompts = " ".join(args.text_prompts.split("|"))
+
+    audio_prompts = []
+    if args.audio_prompts:
+        for n, audio_file in enumerate(args.audio_prompts.split("|")):
+            encoded_frames = tokenize_audio(audio_tokenizer, audio_file)
+            if False:
+                samples = audio_tokenizer.decode(encoded_frames)
+                torchaudio.save(
+                    f"{args.output_dir}/p{n}.wav", samples[0], 24000
+                )
+
+            audio_prompts.append(encoded_frames[0][0])
+
+        assert len(args.text_prompts.split("|")) == len(audio_prompts)
+        audio_prompts = torch.concat(audio_prompts, dim=-1).transpose(2, 1)
+        audio_prompts = audio_prompts.to(device)
+
+    cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+
+    for n, text in enumerate(args.text.split("|")):
+        logging.info(f"synthesize text: {text}")
+
+        text_tokens, text_tokens_lens = text_collater(
+            [
+                tokenize_text(
+                    cn_text_tokenizer, text=f"{text_prompts}".strip()
+                )
+            ]
+        )
+
+        ttext_tokens, ttext_tokens_lens = text_collater(
+            [
+                tokenize_text(
+                   cn_text_tokenizer, text=f"{text}".strip()
+                )
+            ]
+        )
+
+        all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
+        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
+
+        # synthesis
+        enroll_x_lens = None
+        if text_prompts:
+            _, enroll_x_lens = text_collater(
+                [
+                    tokenize_text(
+                        cn_text_tokenizer, text=f"{text_prompts}".strip()
+                    )
+                ]
+            )
+        encoded_frames = model.inference(
+            all_text_tokens.to(device),
+            all_text_tokens_lens.to(device),
+            audio_prompts,
+            enroll_x_lens=enroll_x_lens,
+            language_id=torch.IntTensor(language_id).to(device),
+            top_k=args.top_k,
+            temperature=args.temperature,
+        )
+
+        if audio_prompts != []:
+            samples = audio_tokenizer.decode(
+                [(encoded_frames.transpose(2, 1), None)]
+            )
+            # store
+            torchaudio.save(
+                f"{args.output_dir}/{n}.wav", samples[0].cpu(), 24000
+            )
+        else:  # Transformer
+            pass
 
 
 if __name__ == "__main__":
 #    app.logger = logging.getLogger('audio-gui')
-    app.run(debug=True)
+    #app.run(debug=True)
     #a = get_s2t("/tmp/audio16.wav")
     #t = trans(a)
-    print(t)
+    #print(t)
+    infer("test","test.wav","test")
 
