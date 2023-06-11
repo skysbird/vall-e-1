@@ -50,7 +50,7 @@ if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   if [ ! -d $dl_dir/LibriTTS/dev-other ]; then
     # lhotse download libritts $dl_dir
     lhotse download libritts ${dataset_parts} $dl_dir
-    lhotse download aishell $dl_dir
+    lhotse download aishell3 $dl_dir
   fi
 fi
 
@@ -65,11 +65,11 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
     touch data/manifests/.libritts.done
   fi
 
-  if [ ! -e data/manifests/.aishell.done ]; then
-    log "Stage 1: Prepare aishell manifest"
-    lhotse prepare aishell $dl_dir/aishell data/manifests
-    touch data/manifests/.aishell.done
-  fi
+  #if [ ! -e data/manifests/.aishell.done ]; then
+  #  log "Stage 1: Prepare aishell manifest"
+  #  lhotse prepare aishell $dl_dir/aishell data/manifests
+  #  touch data/manifests/.aishell.done
+  #fi
 
 
 fi
@@ -94,12 +94,12 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
     if [ "${dataset_parts}" == "--dataset-parts all" ];then
 
     lhotse subset --first 400 \
-        ${audio_feats_dir}/aishell_cuts_dev.jsonl.gz \
-        ${audio_feats_dir}/aishell_cuts_dev_400.jsonl.gz
+        ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
+        ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz
 
-    lhotse subset --last 13926 \
-        ${audio_feats_dir}/aishell_cuts_dev.jsonl.gz \
-        ${audio_feats_dir}/aishell_cuts_dev_others.jsonl.gz
+    lhotse subset --last 24373 \
+        ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
+	${audio_feats_dir}/aishell3_cuts_dev_others.jsonl.gz
 
     # train
     #lhotse combine \
@@ -114,8 +114,8 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
 
       # train
       lhotse combine \
-        ${audio_feats_dir}/aishell_cuts_dev_others.jsonl.gz \
-        ${audio_feats_dir}/aishell_cuts_train.jsonl.gz \
+        ${audio_feats_dir}/aishell3_cuts_train.jsonl.gz \
+        ${audio_feats_dir}/aishell3_cuts_dev_others.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-clean-100.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-clean-360.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-other-500.jsonl.gz \
@@ -123,7 +123,7 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
 
       # dev
       lhotse combine \
-        ${audio_feats_dir}/aishell_cuts_dev_400.jsonl.gz \
+        ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_dev-clean.jsonl.gz \
         ${audio_feats_dir}/cuts_dev.jsonl.gz
     else  # debug
@@ -139,7 +139,7 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
 
     # test
     lhotse combine \
-      ${audio_feats_dir}/aishell_cuts_test.jsonl.gz \
+      ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz \
       ${audio_feats_dir}/libritts_cuts_test-clean.jsonl.gz \
       ${audio_feats_dir}/cuts_test.jsonl.gz
 
