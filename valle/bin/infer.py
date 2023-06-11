@@ -126,7 +126,7 @@ def get_args():
 LAN_ID_DICT = {}
 LAN_ID_DICT['Chinese'] = 1;
 LAN_ID_DICT['English'] = 2;
-language_id = [1] #must []
+language_id = [2] #must []
 
 @torch.no_grad()
 def main():
@@ -245,7 +245,7 @@ def main():
         ttext_tokens, ttext_tokens_lens = text_collater(
             [
                 tokenize_text(
-                   cn_text_tokenizer, text=f"{text}".strip()
+                   text_tokenizer, text=f"{text}".strip()
                 )
             ]
         )

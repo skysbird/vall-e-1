@@ -1,6 +1,7 @@
 from subprocess import run, PIPE
 import ffmpeg
-from flask import logging, Flask, render_template, request
+import logging
+from flask import Flask, render_template, request
 import nls
 import json
 import time
@@ -179,10 +180,13 @@ from valle.data import (
 from valle.data.collation import get_text_token_collater
 from valle.models import add_model_arguments, get_model
 import torch
+from pathlib import Path
+import torchaudio
 
 #python3 bin/infer.py --output-dir infer/demos     --model-name valle --norm-first true --add-prenet false     --share-embedding true --norm-first true --add-prenet false     --text-prompts "甚至 出现 交易 几乎 停 滞 的 情况"     --audio-prompts ./prompts/ch_24k.wav     --text "There was even a situation where the transaction almost stagnated."     --checkpoint=${exp_dir}/best-valid-loss.pt
 
 def infer(prompt_text,prompt_wav,target_text):
+    language_id = [2] #2 english,1 chinese
     args = AttributeDict()
     text_tokenizer = TextTokenizer(backend="espeak")
     text_collater = get_text_token_collater("data/tokenized/unique_text_tokens.k2symbols")
@@ -199,7 +203,7 @@ def infer(prompt_text,prompt_wav,target_text):
     args.text_prompts = prompt_text
     args.audio_prompts = prompt_wav 
     args.text = target_text
-    args.checkpoint="best-valid-loss.pt"
+    args.checkpoint="exp/valle/best-valid-loss.pt"
     args.output_dir = "output"
     args.decoder_dim = 1024
     args.nhead = 16
@@ -208,7 +212,9 @@ def infer(prompt_text,prompt_wav,target_text):
     args.prefix_mode = 0
     args.prepend_bos = False
     args.num_quantizers = 8
-    args.scaling_xformers = False
+    args.scaling_xformers = False   
+    args.top_k = -100
+    args.temperature = 1.0
 
     model = get_model(args)
     if args.checkpoint:
@@ -259,7 +265,7 @@ def infer(prompt_text,prompt_wav,target_text):
         ttext_tokens, ttext_tokens_lens = text_collater(
             [
                 tokenize_text(
-                   cn_text_tokenizer, text=f"{text}".strip()
+                   text_tokenizer, text=f"{text}".strip()
                 )
             ]
         )
@@ -305,5 +311,5 @@ if __name__ == "__main__":
     #a = get_s2t("/tmp/audio16.wav")
     #t = trans(a)
     #print(t)
-    infer("test","test.wav","test")
+    infer("甚至 出现 交易 几乎 停滞 的 情况","test.wav","This is a test")
 
