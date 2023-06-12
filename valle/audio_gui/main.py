@@ -98,28 +98,33 @@ def index():
 
 @app.route('/audio', methods=['POST'])
 def audio():
-    with open('/tmp/audio.wav', 'wb') as f:
+    with open('tmp/audio.wav', 'wb') as f:
         f.write(request.data)
 
     #resample 24k
-    ffmpeg.input("/tmp/audio.wav").output("/tmp/audio16.wav",ar=16000).overwrite_output().run()
-    ffmpeg.input("/tmp/audio.wav").output("/tmp/audio24.wav",ar=24000).overwrite_output().run()
+    ffmpeg.input("tmp/audio.wav").output("tmp/audio16.wav",ar=16000).overwrite_output().run()
+    ffmpeg.input("tmp/audio.wav").output("tmp/audio24.wav",ar=24000).overwrite_output().run()
     #s2t
-    s2t = get_s2t("/tmp/audio16.wav")
+    s2t = get_s2t("tmp/audio16.wav")
+    #translate
     target_text = trans(s2t)
     print(s2t)
     print(target_text)
 
 
-    return f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}"
-    #translate
 
     #tts
+    infer(s2t,"tmp/audio24.wav",target_text)
+
+    res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
+            "output":"output/0.wav",
+            "source":"tmp/audio24.wav",
+          }
+    return json.dumps(res)
 
 
     #proc = run(['ffprobe', '-of', 'default=noprint_wrappers=1', '/tmp/audio.wav'], text=True, stderr=PIPE)
     #return proc.stderr
-    return "OK"
 
 
 def get_s2t(path):
@@ -214,7 +219,7 @@ def infer(prompt_text,prompt_wav,target_text):
     args.num_quantizers = 8
     args.scaling_xformers = False   
     args.top_k = -100
-    args.temperature = 1.0
+    args.temperature = 1.1
 
     model = get_model(args)
     if args.checkpoint:
@@ -307,9 +312,9 @@ def infer(prompt_text,prompt_wav,target_text):
 
 if __name__ == "__main__":
 #    app.logger = logging.getLogger('audio-gui')
-    #app.run(debug=True)
-    #a = get_s2t("/tmp/audio16.wav")
+    app.run(host="0.0.0.0",port=5000,debug=True)
+    #a = get_s2t("tmp/audio16.wav")
     #t = trans(a)
     #print(t)
-    infer("甚至 出现 交易 几乎 停滞 的 情况","test.wav","This is a test")
+    #infer("甚至 出现 交易 几乎 停滞 的 情况","test.wav","This is a test")
 

@@ -19,7 +19,9 @@
             <button id="stop" class="btn btn-danger" onclick="stopRecording()" disabled>Stop</button>
         </p>
         <textarea id="output" style="width: 100%;height: 200px" readonly></textarea>
-    </div>
+	input <audio controls="controls" src="" id="source"> </audio> </br>
+
+	output <audio controls="controls" src="" id="audio"> </audio>
 
 
     <script src="{{ url_for('static', filename='recorder.js') }}"></script>

@@ -32,8 +32,14 @@ function gotBuffers(buffers) {
 
 function doneEncoding(soundBlob) {
     // fetch('/audio', {method: "POST", body: soundBlob}).then(response => $('#output').text(response.text()))
-    fetch('/audio', {method: "POST", body: soundBlob}).then(response => response.text().then(text => {
-        document.getElementById('output').value = text;
+    fetch('/audio', {method: "POST", body: soundBlob}).then(response => response.text().then(res => {
+	let data = JSON.parse(res)
+        document.getElementById('output').value = data.text;
+        document.getElementById('source').src = "/static/" + data.source+"?rnd="+Math.random()
+ 	document.getElementById('source').load()
+        document.getElementById('audio').src = "/static/" + data.output+"?rnd="+Math.random()
+ 	document.getElementById('audio').load()
+
     }));
     recIndex++;
 }
@@ -45,6 +51,11 @@ function stopRecording() {
     document.getElementById('start').removeAttribute('disabled');
     audioRecorder.getBuffers(gotBuffers);
     pause()
+ document.getElementById('source').src = ""
+ document.getElementById('source').load()
+ document.getElementById('source').src = ""
+ document.getElementById('audio').load()
+
 }
 
 function startRecording() {
@@ -179,7 +190,7 @@ function initAudio() {
 window.addEventListener('load', initAudio);
 
 function unpause() {
-    document.getElementById('init').style.display = 'none';
+//    document.getElementById('init').style.display = 'none';
     audioContext.resume().then(() => {
         console.log('Playback resumed successfully');
     });
