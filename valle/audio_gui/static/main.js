@@ -24,7 +24,7 @@ var rafID = null;
 var analyserContext = null;
 var canvasWidth, canvasHeight;
 var recIndex = 0;
-
+var currentOutput = null;
 
 function gotBuffers(buffers) {
     audioRecorder.exportMonoWAV(doneEncoding);
@@ -39,9 +39,28 @@ function doneEncoding(soundBlob) {
  	document.getElementById('source').load()
         document.getElementById('audio').src = "/static/" + data.output+"?rnd="+Math.random()
  	document.getElementById('audio').load()
+    currentOutput = data.output.substring(data.output.lastIndexOf("/")+1)
 
     }));
     recIndex++;
+}
+
+function regen(filename) {
+    fetch('/audio', {method: "POST", 
+ headers: {
+        'Content-Type': 'application/json;charset=utf-8;'
+    },
+    body: JSON.stringify({filename: filename})}).then(response => response.text().then(res => {
+	let data = JSON.parse(res)
+        document.getElementById('output').value = data.text;
+        document.getElementById('source').src = "/static/" + data.source+"?rnd="+Math.random()
+ 	document.getElementById('source').load()
+        document.getElementById('audio').src = "/static/" + data.output+"?rnd="+Math.random()
+ 	document.getElementById('audio').load()
+
+    }));
+    recIndex++;
+
 }
 
 function stopRecording() {
