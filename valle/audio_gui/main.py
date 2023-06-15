@@ -19,6 +19,8 @@ from aliyunsdkalimt.request.v20181012 import TranslateGeneralRequest
 app = Flask(__name__)
 
 
+app.config['UPLOAD_FOLDER'] = 'tmp'
+
 
 
 import threading
@@ -98,11 +100,14 @@ def index():
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-def audio():
-    filename = request.json.filename
-    if filename is None: 
+def upload():
+
+    f = request.files['file']
+    filename =  hashlib.md5(f"{f.filename}".encode("utf-8")).hexdigest()
+    f.save(filename)
+    print(filename)
+    if filename is not None: 
         #新文件处理
-        filename = hashlib.md5(f"{random.Random()}".encode("utf-8")).hexdigest()
         with open(f"tmp/{filename}.wav", 'wb') as f:
             f.write(request.data)
 
@@ -132,7 +137,9 @@ def audio():
 
 @app.route('/audio', methods=['POST'])
 def audio():
-    filename = request.json.filename
+    filename = None
+    #if request.json:
+    #    filename = request.json.filename
     if filename is None: 
         #新文件处理
         filename = hashlib.md5(f"{random.Random()}".encode("utf-8")).hexdigest()
@@ -151,7 +158,7 @@ def audio():
 
 
     #tts
-    infer(s2t,f"tmp/{filename}24.wav",target_text)
+    infer(s2t,f"tmp/{filename}24.wav",target_text,filename)
 
     res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
             "output":f"output/{filename}.wav",
@@ -227,7 +234,7 @@ import torchaudio
 
 #python3 bin/infer.py --output-dir infer/demos     --model-name valle --norm-first true --add-prenet false     --share-embedding true --norm-first true --add-prenet false     --text-prompts "甚至 出现 交易 几乎 停 滞 的 情况"     --audio-prompts ./prompts/ch_24k.wav     --text "There was even a situation where the transaction almost stagnated."     --checkpoint=${exp_dir}/best-valid-loss.pt
 
-def infer(prompt_text,prompt_wav,target_text):
+def infer(prompt_text,prompt_wav,target_text,output):
     language_id = [2] #2 english,1 chinese
     args = AttributeDict()
     text_tokenizer = TextTokenizer(backend="espeak")
@@ -237,7 +244,7 @@ def infer(prompt_text,prompt_wav,target_text):
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda", 0)
-
+#python3 bin/infer.py --output-dir infer/demos     --model-name valle --norm-first true --add-prenet false     --share-embedding true --norm-first true --add-prenet false     --text-prompts "怎么 又是 你这个 扫把星"     --audio-prompts ./prompts/2_.wav     --text "I don't care who he is!"     --checkpoint=${exp_dir}/best-valid-loss.pt
     args.model_name = "valle"
     args.norm_first = True
     args.add_prenet = False
@@ -245,9 +252,8 @@ def infer(prompt_text,prompt_wav,target_text):
     args.text_prompts = prompt_text
     args.audio_prompts = prompt_wav 
     args.text = target_text
-   # args.checkpoint="exp/valle/best-valid-loss.pt"
+    args.checkpoint="exp/valle/best-valid-loss.pt"
     #args.checkpoint="exp/valle/ar.pt"
-    args.checkpoint="exp/valle/ar5.pt"
     args.output_dir = "output"
     args.decoder_dim = 1024
     args.nhead = 16
@@ -343,7 +349,7 @@ def infer(prompt_text,prompt_wav,target_text):
             )
             # store
             torchaudio.save(
-                f"{args.output_dir}/{n}.wav", samples[0].cpu(), 24000
+                f"{args.output_dir}/{output}.wav", samples[0].cpu(), 24000
             )
         else:  # Transformer
             pass
