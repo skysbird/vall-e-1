@@ -99,6 +99,47 @@ import random
 def index():
     return render_template('index.html')
 
+
+@app.route('/convert', methods=['POST'])
+def convert():
+
+    f = request.files['file']
+    filename =  hashlib.md5(f"{f.filename}".encode("utf-8")).hexdigest()
+    f.save("tmp/"+filename)
+    s2t = request.form['s2t']
+    print(s2t)
+
+    if filename is not None: 
+        #新文件处理
+        #with open(f"tmp/{filename}.wav", 'wb') as f:
+        #    f.write(request.data)
+
+        #resample 24k
+        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+    ##s2t
+    #s2t = get_s2t(f"tmp/{filename}16.wav")
+    ##translate
+    target_text = trans(s2t)
+    print(s2t)
+    print(target_text)
+
+
+    ##tts
+    infer(s2t,f"tmp/{filename}24.wav",target_text)
+
+    res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
+            "output":f"output/{filename}.wav",
+            "source":f"tmp/{filename}24.wav",
+          }
+    return json.dumps(res)
+    #return "OK"
+
+
+    #proc = run(['ffprobe', '-of', 'default=noprint_wrappers=1', '/tmp/audio.wav'], text=True, stderr=PIPE)
+    #return proc.stderr
+
+
 @app.route('/upload', methods=['POST'])
 def upload():
 
