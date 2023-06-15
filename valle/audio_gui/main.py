@@ -132,6 +132,7 @@ def convert():
             "output":f"output/{filename}.wav",
             "source":f"tmp/{filename}24.wav",
           }
+    print(res)
     return json.dumps(res)
     #return "OK"
 
@@ -305,7 +306,7 @@ def infer(prompt_text,prompt_wav,target_text,output):
     args.num_quantizers = 8
     args.scaling_xformers = False   
     args.top_k = -100
-    args.temperature = 1.0
+    args.temperature = 1.1
 
     model = get_model(args)
     if args.checkpoint:

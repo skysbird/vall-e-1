@@ -697,6 +697,7 @@ class VALLF(nn.Module):
             )
             logits = predict_layer(y_dec[:, prefix_len:])
             samples = torch.argmax(logits, dim=-1)
+
             codes.append(samples)
             # Formula (4) (5)
             if i < 6:
@@ -1038,7 +1039,7 @@ class VALLE(VALLF):
             y_emb = self.ar_audio_embedding(y)
             y_len = y.shape[1]
             # adding language id to audio token embedding
-            print(y_emb.size())
+            #print(y_emb.size())
             #print(language_id.size())
             #language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
             #print(language_id_exp.size())
@@ -1074,6 +1075,7 @@ class VALLE(VALLF):
                 mask=xy_attn_mask,
             )
             logits = self.ar_predict_layer(xy_dec[:, -1])
+            #print(logits.size())
             samples = topk_sampling(
                 logits, top_k=top_k, top_p=1.0, temperature=temperature
             )
@@ -1135,7 +1137,15 @@ class VALLE(VALLF):
                 )
                 logits = predict_layer(xy_dec[:, text_len + prefix_len :])
 
+                #print(logits.size())
+                if temperature != 1.0:
+                    logits = logits / temperature
                 samples = torch.argmax(logits, dim=-1)
+
+                #samples = topk_sampling(
+                #logits, top_k=top_k, top_p=1.0, temperature=temperature
+            #)
+
                 codes.append(samples)
 
                 if i < self.num_quantizers - 2:
@@ -1335,5 +1345,6 @@ def topk_sampling(logits, top_k=10, top_p=1.0, temperature=1.0):
     # Top-p/top-k filtering
     logits = top_k_top_p_filtering(logits, top_k=top_k, top_p=top_p)
     # Sample
-    token = torch.multinomial(F.softmax(logits, dim=-1), num_samples=1)
+    f = F.softmax(logits, dim=-1)
+    token = torch.multinomial(f, num_samples=1)
     return token
