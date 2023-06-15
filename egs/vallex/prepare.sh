@@ -93,13 +93,13 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   if [ ! -e ${audio_feats_dir}/.libritts.train.done ]; then
     if [ "${dataset_parts}" == "--dataset-parts all" ];then
 
-    lhotse subset --first 400 \
-        ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
-        ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz
+#     lhotse subset --first 400 \
+#         ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
+#         ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz
 
-    lhotse subset --last 24373 \
-        ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
-	${audio_feats_dir}/aishell3_cuts_dev_others.jsonl.gz
+#     lhotse subset --last 24373 \
+#         ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
+# 	${audio_feats_dir}/aishell3_cuts_dev_others.jsonl.gz
 
     # train
     #lhotse combine \
@@ -114,16 +114,15 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
 
       # train
       lhotse combine \
-        ${audio_feats_dir}/aishell3_cuts_train.jsonl.gz \
-        ${audio_feats_dir}/aishell3_cuts_dev_others.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-clean-100.jsonl.gz \
+        ${audio_feats_dir}/aishell3_cuts_train.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-clean-360.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-other-500.jsonl.gz \
         ${audio_feats_dir}/cuts_train.jsonl.gz
 
       # dev
       lhotse combine \
-        ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz \
+        ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_dev-clean.jsonl.gz \
         ${audio_feats_dir}/cuts_dev.jsonl.gz
     else  # debug
@@ -137,11 +136,11 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
         ${audio_feats_dir}/cuts_dev.jsonl.gz
     fi
 
-    # test
-    lhotse combine \
-      ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz \
-      ${audio_feats_dir}/libritts_cuts_test-clean.jsonl.gz \
-      ${audio_feats_dir}/cuts_test.jsonl.gz
+    # # test
+    # lhotse combine \
+    #   ${audio_feats_dir}/aishell3_cuts_dev_400.jsonl.gz \
+    #   ${audio_feats_dir}/libritts_cuts_test-clean.jsonl.gz \
+    #   ${audio_feats_dir}/cuts_test.jsonl.gz
 
     touch ${audio_feats_dir}/.libritts.train.done
   fi

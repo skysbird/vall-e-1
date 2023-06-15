@@ -525,6 +525,7 @@ def compute_loss(
     #here language_id is []
     language_id = batch["language"].to(device)
 
+    #logging.info(f"language id={batch['text']}")
     with torch.set_grad_enabled(is_training):
         predicts, loss, metrics = model(
             x=text_tokens,

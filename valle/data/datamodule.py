@@ -321,6 +321,7 @@ class TtsDataModule:
                 cuts_train,
                 max_duration=self.args.max_duration,
                 shuffle=self.args.shuffle,
+                drop_last=True,
             )
         logging.info("About to create train dataloader")
 
