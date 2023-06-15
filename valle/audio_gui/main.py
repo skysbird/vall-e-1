@@ -22,7 +22,6 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'tmp'
 
 
-
 import threading
 
 class TestSr:
@@ -145,7 +144,7 @@ def upload():
 
     f = request.files['file']
     filename =  hashlib.md5(f"{f.filename}".encode("utf-8")).hexdigest()
-    f.save("tmp/"+filename)
+    f.save("tmp/"+filename+".wav")
     print(filename)
     if filename is not None: 
         #新文件处理
@@ -164,7 +163,7 @@ def upload():
 
 
     #tts
-    infer(s2t,f"tmp/{filename}24.wav",target_text)
+    infer(s2t,f"tmp/{filename}24.wav",target_text,filename)
 
     res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
             "output":f"output/{filename}.wav",

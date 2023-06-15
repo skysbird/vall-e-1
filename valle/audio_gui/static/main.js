@@ -45,6 +45,26 @@ function doneEncoding(soundBlob) {
     recIndex++;
 }
 
+function upload(event) {
+         const formData = new FormData();
+         formData.append('file', event.target.files[0]);
+         fetch('/upload', {
+           method: 'post',
+           body: formData,
+           }).then(response => response.json())
+           .then((data) => {
+                console.log(data);
+        	document.getElementById('output').value = data.text;
+        	document.getElementById('source').src = "/static/" + data.source+"?rnd="+Math.random()
+ 		document.getElementById('source').load()
+        	document.getElementById('audio').src = "/static/" + data.output+"?rnd="+Math.random()
+ 		document.getElementById('audio').load()
+    currentOutput = data.output.substring(data.output.lastIndexOf("/")+1)
+
+           });
+          }
+
+
 function regen(filename) {
     fetch('/audio', {method: "POST", 
  headers: {
