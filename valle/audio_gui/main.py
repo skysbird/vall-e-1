@@ -104,12 +104,12 @@ def upload():
 
     f = request.files['file']
     filename =  hashlib.md5(f"{f.filename}".encode("utf-8")).hexdigest()
-    f.save(filename)
+    f.save("tmp/"+filename)
     print(filename)
     if filename is not None: 
         #新文件处理
-        with open(f"tmp/{filename}.wav", 'wb') as f:
-            f.write(request.data)
+        #with open(f"tmp/{filename}.wav", 'wb') as f:
+        #    f.write(request.data)
 
         #resample 24k
         ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
