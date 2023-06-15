@@ -11,3 +11,4 @@ egs/*/data
 egs/libritts/prompts/*.png
 valle/version.py
 infer/
+*.swp
