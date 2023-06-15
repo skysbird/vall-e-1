@@ -25,6 +25,24 @@
     <button id="regen"  class="btn btn-danger" onclick="regen(currentOutput)" >重新生成</button>
 
 
+
+    <br/>
+    <input type="file" id="files" onchange="upload(event)"/>
+     <script type="text/javascript">
+       function upload(event) {
+         const formData = new FormData();
+         formData.append('file', event.target.files[0]);
+         fetch('/upload', {
+           method: 'post',
+           body: formData,
+           }).then(response => response.json())
+           .then((data) => {
+                console.log(data);
+           });
+          }
+     </script>
+
+
     <script src="{{ url_for('static', filename='recorder.js') }}"></script>
     <script src="{{ url_for('static', filename='audiodisplay.js') }}"></script>
     <script src="{{ url_for('static', filename='main.js') }}"></script>

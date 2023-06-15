@@ -97,6 +97,38 @@ import random
 def index():
     return render_template('index.html')
 
+@app.route('/upload', methods=['POST'])
+def audio():
+    filename = request.json.filename
+    if filename is None: 
+        #新文件处理
+        filename = hashlib.md5(f"{random.Random()}".encode("utf-8")).hexdigest()
+        with open(f"tmp/{filename}.wav", 'wb') as f:
+            f.write(request.data)
+
+        #resample 24k
+        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+    #s2t
+    s2t = get_s2t(f"tmp/{filename}16.wav")
+    #translate
+    target_text = trans(s2t)
+    print(s2t)
+    print(target_text)
+
+
+    #tts
+    infer(s2t,f"tmp/{filename}24.wav",target_text)
+
+    res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
+            "output":f"output/{filename}.wav",
+            "source":f"tmp/{filename}24.wav",
+          }
+    return json.dumps(res)
+
+
+    #proc = run(['ffprobe', '-of', 'default=noprint_wrappers=1', '/tmp/audio.wav'], text=True, stderr=PIPE)
+    #return proc.stderr
 
 @app.route('/audio', methods=['POST'])
 def audio():
@@ -215,7 +247,7 @@ def infer(prompt_text,prompt_wav,target_text):
     args.text = target_text
    # args.checkpoint="exp/valle/best-valid-loss.pt"
     #args.checkpoint="exp/valle/ar.pt"
-    args.checkpoint="exp/valle/ar3.pt"
+    args.checkpoint="exp/valle/ar5.pt"
     args.output_dir = "output"
     args.decoder_dim = 1024
     args.nhead = 16
@@ -323,5 +355,5 @@ if __name__ == "__main__":
     #a = get_s2t("tmp/audio16.wav")
     #t = trans(a)
     #print(t)
-#    infer("原来是你啊","test.wav","So that is you")
+#    infer("什么鸿门宴啊 怎么听上去那么恐怖啊","test.wav","What a Feast at Swan Goose Gate? Why does it sound so scary")
 
