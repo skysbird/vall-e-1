@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = 'tmp'
 
-
+   
 
 import threading
 
@@ -93,6 +93,25 @@ class TestSr:
 #multiruntest(1)
 import hashlib
 import random
+from speechbrain.pretrained import SpectralMaskEnhancement
+
+enhance_model = SpectralMaskEnhancement.from_hparams(
+    source="speechbrain/metricgan-plus-voicebank",
+    savedir="tmp/metricgan-plus-voicebank",
+)
+
+
+def enhance(filename):
+    # Load and add fake batch dimension
+    noisy = enhance_model.load_audio(
+        f"tmp/{filename}.wav"
+    ).unsqueeze(0)
+    
+    # Add relative length tensor
+    enhanced = enhance_model.enhance_batch(noisy, lengths=torch.tensor([1.]))
+    
+    # Saving enhanced signal on disk
+    torchaudio.save(f'tmp/{filename}_enhanced.wav', enhanced.cpu(), 16000)
 
 
 @app.route('/')
@@ -114,9 +133,14 @@ def convert():
         #with open(f"tmp/{filename}.wav", 'wb') as f:
         #    f.write(request.data)
 
+        #enhance
+        enhance(filename)
+
         #resample 24k
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        #ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        #ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
     ##s2t
     #s2t = get_s2t(f"tmp/{filename}16.wav")
     ##translate
@@ -153,9 +177,13 @@ def upload():
         #with open(f"tmp/{filename}.wav", 'wb') as f:
         #    f.write(request.data)
 
+
+        #enhance
+        enhance(filename)
+
         #resample 24k
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
     #s2t
     s2t = get_s2t(f"tmp/{filename}16.wav")
     #translate
@@ -188,9 +216,12 @@ def audio():
         with open(f"tmp/{filename}.wav", 'wb') as f:
             f.write(request.data)
 
+        #enhance
+        enhance(filename)
+
         #resample 24k
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
     #s2t
     s2t = get_s2t(f"tmp/{filename}16.wav")
     #translate
@@ -301,12 +332,12 @@ def infer(prompt_text,prompt_wav,target_text,output):
     args.nhead = 16
     args.num_decoder_layers = 12
     args.scale_factor = 1
-    args.prefix_mode = 0
+    args.prefix_mode = 1
     args.prepend_bos = False
     args.num_quantizers = 8
     args.scaling_xformers = False   
     args.top_k = -100
-    args.temperature = 1.1
+    args.temperature = 1.0
 
     model = get_model(args)
     if args.checkpoint:
@@ -329,16 +360,17 @@ def infer(prompt_text,prompt_wav,target_text,output):
     if args.audio_prompts:
         for n, audio_file in enumerate(args.audio_prompts.split("|")):
             encoded_frames = tokenize_audio(audio_tokenizer, audio_file)
-            if False:
+            if True:
                 samples = audio_tokenizer.decode(encoded_frames)
                 torchaudio.save(
-                    f"{args.output_dir}/p{n}.wav", samples[0], 24000
+                    f"{args.output_dir}/{output}_test.wav", samples[0].detach().cpu(), 24000
                 )
 
             audio_prompts.append(encoded_frames[0][0])
 
         assert len(args.text_prompts.split("|")) == len(audio_prompts)
         audio_prompts = torch.concat(audio_prompts, dim=-1).transpose(2, 1)
+        print(audio_prompts)
         audio_prompts = audio_prompts.to(device)
 
     cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
@@ -346,10 +378,15 @@ def infer(prompt_text,prompt_wav,target_text,output):
     for n, text in enumerate(args.text.split("|")):
         logging.info(f"synthesize text: {text}")
 
+        to = tokenize_text(
+                    cn_text_tokenizer, text=f"{text_prompts}."#.strip()
+                )
+        print(to)
+
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts}".strip()
+                    cn_text_tokenizer, text=f"{text_prompts}."#.strip()
                 )
             ]
         )
@@ -384,6 +421,10 @@ def infer(prompt_text,prompt_wav,target_text,output):
             top_k=args.top_k,
             temperature=args.temperature,
         )
+
+        #encoded_frames = encoded_frames[:,170:,:]
+        #print(encoded_frames.size())
+
 
         if audio_prompts != []:
             samples = audio_tokenizer.decode(
