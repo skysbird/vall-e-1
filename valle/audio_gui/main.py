@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = 'tmp'
 
-   
+
 
 import threading
 
@@ -93,25 +93,39 @@ class TestSr:
 #multiruntest(1)
 import hashlib
 import random
-from speechbrain.pretrained import SpectralMaskEnhancement
+#from speechbrain.pretrained import SpectralMaskEnhancement
+#
+#enhance_model = SpectralMaskEnhancement.from_hparams(
+#    source="speechbrain/metricgan-plus-voicebank",
+#    savedir="tmp/metricgan-plus-voicebank",
+#)
+#
+#
+#import torchaudio
+from speechbrain.pretrained import WaveformEnhancement
 
-enhance_model = SpectralMaskEnhancement.from_hparams(
-    source="speechbrain/metricgan-plus-voicebank",
-    savedir="tmp/metricgan-plus-voicebank",
+enhance_model = WaveformEnhancement.from_hparams(
+    source="speechbrain/mtl-mimic-voicebank",
+    savedir="pretrained_models/mtl-mimic-voicebank",
 )
+
 
 
 def enhance(filename):
     # Load and add fake batch dimension
-    noisy = enhance_model.load_audio(
-        f"tmp/{filename}.wav"
-    ).unsqueeze(0)
+    #noisy = enhance_model.load_audio(
+    #    f"tmp/{filename}.wav"
+    #).unsqueeze(0)
     
     # Add relative length tensor
-    enhanced = enhance_model.enhance_batch(noisy, lengths=torch.tensor([1.]))
+    #enhanced = enhance_model.enhance_batch(noisy, lengths=torch.tensor([1.]))
+    enhanced = enhance_model.enhance_file(f"tmp/{filename}.wav")
+
+    # Saving enhanced signal on disk
+    #torchaudio.save('enhanced.wav', enhanced.unsqueeze(0).cpu(), 16000)
     
     # Saving enhanced signal on disk
-    torchaudio.save(f'tmp/{filename}_enhanced.wav', enhanced.cpu(), 16000)
+    torchaudio.save(f'tmp/{filename}_enhanced.wav', enhanced.unsqueeze(0).cpu(), 16000)
 
 
 @app.route('/')
