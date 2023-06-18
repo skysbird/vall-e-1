@@ -22,7 +22,6 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'tmp'
 
 
-
 import threading
 
 class TestSr:
@@ -141,6 +140,9 @@ def convert():
     f.save("tmp/"+filename+".wav")
     s2t = request.form['s2t']
     print(s2t)
+    enhanced = request.form.get("enhanced", type=str, default='1')
+    print(enhanced)
+    ttext = request.form.get("ttext", type=str, default=None)
 
     if filename is not None: 
         #新文件处理
@@ -148,17 +150,22 @@ def convert():
         #    f.write(request.data)
 
         #enhance
-        enhance(filename)
+        if enhanced == '1':
+            enhance(filename)
+            #resample 24k
+            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        else:
+            ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+            ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
 
-        #resample 24k
-        #ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        #ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
-        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
     ##s2t
     #s2t = get_s2t(f"tmp/{filename}16.wav")
     ##translate
-    target_text = trans(s2t)
+    if ttext is None:
+        target_text = trans(s2t)
+    else:
+        target_text = ttext
     print(s2t)
     print(target_text)
 
@@ -393,14 +400,14 @@ def infer(prompt_text,prompt_wav,target_text,output):
         logging.info(f"synthesize text: {text}")
 
         to = tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts}."#.strip()
+                    cn_text_tokenizer, text=f"{text_prompts}.".strip()
                 )
         print(to)
 
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts}."#.strip()
+                    cn_text_tokenizer, text=f"{text_prompts}.".strip()
                 )
             ]
         )
@@ -408,7 +415,7 @@ def infer(prompt_text,prompt_wav,target_text,output):
         ttext_tokens, ttext_tokens_lens = text_collater(
             [
                 tokenize_text(
-                   text_tokenizer, text=f"{text}".strip()
+                   text_tokenizer, text=f"{text}.".strip()
                 )
             ]
         )
@@ -422,7 +429,7 @@ def infer(prompt_text,prompt_wav,target_text,output):
             _, enroll_x_lens = text_collater(
                 [
                     tokenize_text(
-                        cn_text_tokenizer, text=f"{text_prompts}".strip()
+                        cn_text_tokenizer, text=f"{text_prompts}.".strip()
                     )
                 ]
             )
