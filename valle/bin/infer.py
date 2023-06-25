@@ -173,7 +173,8 @@ def main():
         audio_prompts = torch.concat(audio_prompts, dim=-1).transpose(2, 1)
         audio_prompts = audio_prompts.to(device)
 
-    cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+    cn_text_tokenizer = TextTokenizer(backend=args.text_extractor)
+    #cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
 
 
     if os.path.isfile(args.text):  # for demos

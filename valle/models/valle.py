@@ -760,7 +760,7 @@ class VALLE(VALLF):
             **kwargs,
         )
 
-        self.lang_embedding = nn.Embedding(d_model, NUM_AUDIO_TOKENS +  int(self.ar_audio_prepend_bos))
+        self.lang_embedding = nn.Embedding(d_model, NUM_AUDIO_TOKENS) 
         #self.language_ids = torch.tensor([1, 2])
         
 
@@ -1026,6 +1026,9 @@ class VALLE(VALLF):
         prompts = y
         prefix_len = y.shape[1]
 
+        print(f"text_len={text_len}")
+        print(f"prefix_len={prefix_len}")
+
         # AR Decoder
         # TODO: Managing decoder steps avoid repetitive computation
         y = prompts[..., 0]
@@ -1033,6 +1036,7 @@ class VALLE(VALLF):
             y = F.pad(y, (1, 0), value=NUM_AUDIO_TOKENS + 1)
 
         x_len = x_lens.max()
+        #x_attn_mask = torch.ones((x_len, x_len), dtype=torch.bool)
         x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool)
 
         while True:
@@ -1054,11 +1058,21 @@ class VALLE(VALLF):
             y_pos = self.ar_audio_position(y_emb)
             xy_pos = torch.concat([x, y_pos], dim=1)
 
+            #x_attn_mask_pad = F.pad(
+            #    x_attn_mask,
+            #    (0, y_len-20),
+            #    value=False,
+            #)
+
             x_attn_mask_pad = F.pad(
                 x_attn_mask,
                 (0, y_len),
                 value=True,
             )
+
+            #print(f"y_len={y_len}")
+            #print(f"x_len={x_len}")
+
             y_attn_mask = F.pad(
                 torch.triu(
                     torch.ones(y_len, y_len, dtype=torch.bool), diagonal=1
@@ -1089,6 +1103,11 @@ class VALLE(VALLF):
                     raise SyntaxError(
                         "well trained model shouldn't reach here."
                     )
+
+                print("torch.argmax(logits, dim=-1)[0] == NUM_AUDIO_TOKENS",torch.argmax(logits, dim=-1)[0] == NUM_AUDIO_TOKENS)
+                print("samples[0, 0] == NUM_AUDIO_TOKENS",samples[0, 0] == NUM_AUDIO_TOKENS)
+                print("(y.shape[1] - prompts.shape[1]) > x_lens.max() * 16",(y.shape[1] - prompts.shape[1]) > x_lens.max() * 16)
+
 
                 print(f"VALL-E EOS [{prompts.shape[1]} -> {y.shape[1]}]")
                 break

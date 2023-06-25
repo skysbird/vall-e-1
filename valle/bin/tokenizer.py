@@ -169,7 +169,7 @@ def main():
     #text_tokenizer = None
     #if args.text_extractor:
     text_tokenizer = TextTokenizer(backend="espeak")
-    cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+    cn_text_tokenizer = TextTokenizer(backend="espeak")
 
     audio_extractor = None
     if args.audio_extractor:
