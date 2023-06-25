@@ -44,6 +44,12 @@ class PypinyinBackend:
     just like "ni1 hao3", the other is like "n i1 h ao3".
     """
 
+    def no_pinyin(self, ch):
+        p = self.en_text_tokenizer(ch)
+        print(p)
+        return p[0]
+
+    
     def __init__(
         self,
         backend="initials_finals",
@@ -51,6 +57,7 @@ class PypinyinBackend:
     ) -> None:
         self.backend = backend
         self.punctuation_marks = punctuation_marks
+        self.en_text_tokenizer = TextTokenizer(backend="espeak")
 
     def phonemize(
         self, text: List[str], separator: Separator, strip=True, njobs=1
@@ -78,7 +85,7 @@ class PypinyinBackend:
             elif self.backend == "pypinyin_initials_finals":
                 for n, py in enumerate(
                     pinyin(
-                        _text, style=Style.TONE3, neutral_tone_with_five=True
+                        _text, style=Style.TONE3, neutral_tone_with_five=True,errors=self.no_pinyin
                     )
                 ):
                     if all([c in self.punctuation_marks for c in py[0]]):

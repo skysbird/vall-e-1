@@ -88,6 +88,7 @@ class TextTokenCollater:
         tokens_seqs = [[p for p in text] for text in texts]
         max_len = len(max(tokens_seqs, key=len))
 
+
         seqs = [
             ([self.bos_symbol] if self.add_bos else [])
             + list(seq)

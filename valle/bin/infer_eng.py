@@ -225,6 +225,8 @@ def main():
                         )
                     ]
                 )
+            
+            
             encoded_frames = model.inference(
                 all_text_tokens.to(device),
                 all_text_tokens_lens.to(device),
