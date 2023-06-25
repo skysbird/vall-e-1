@@ -21,7 +21,6 @@ app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = 'tmp'
 
-
 import threading
 
 class TestSr:
@@ -140,7 +139,7 @@ def convert():
     f.save("tmp/"+filename+".wav")
     s2t = request.form['s2t']
     print(s2t)
-    enhanced = request.form.get("enhanced", type=str, default='1')
+    enhanced = request.form.get("enhanced", type=str, default='0')
     print(enhanced)
     ttext = request.form.get("ttext", type=str, default=None)
 
@@ -150,17 +149,21 @@ def convert():
         #    f.write(request.data)
 
         #enhance
+
         if enhanced == '1':
             enhance(filename)
             #resample 24k
             ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
             ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
         else:
-            ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+            #enhance for asr
+            enhance(filename)
+            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
             ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
 
     ##s2t
-    #s2t = get_s2t(f"tmp/{filename}16.wav")
+    asr = get_s2t(f"tmp/{filename}16.wav")
+
     ##translate
     if ttext is None:
         target_text = trans(s2t)
@@ -176,6 +179,8 @@ def convert():
     res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
             "output":f"output/{filename}.wav",
             "source":f"tmp/{filename}24.wav",
+            "ttext":target_text,
+            "asr":asr,
           }
     print(res)
     return json.dumps(res)
@@ -200,11 +205,15 @@ def upload():
 
 
         #enhance
-        enhance(filename)
+        #enhance(filename)
 
         #resample 24k
-        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        #ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        #ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+
+        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+
     #s2t
     s2t = get_s2t(f"tmp/{filename}16.wav")
     #translate
@@ -320,7 +329,8 @@ from valle.data import (
     tokenize_audio,
     tokenize_text,
 )
-from valle.data.collation import get_text_token_collater
+from valle.data.collation import get_text_token_collater,get_text_token_collater_bos,get_text_token_collater_eos,get_text_token_collater_no
+
 from valle.models import add_model_arguments, get_model
 import torch
 from pathlib import Path
@@ -333,6 +343,9 @@ def infer(prompt_text,prompt_wav,target_text,output):
     args = AttributeDict()
     text_tokenizer = TextTokenizer(backend="espeak")
     text_collater = get_text_token_collater("data/tokenized/unique_text_tokens.k2symbols")
+    text_collater_bos = get_text_token_collater("data/tokenized/unique_text_tokens.k2symbols")
+    text_collater_eos = get_text_token_collater("data/tokenized/unique_text_tokens.k2symbols")
+    text_collater_no = get_text_token_collater("data/tokenized/unique_text_tokens.k2symbols")
     audio_tokenizer = AudioTokenizer()
 
     device = torch.device("cpu")
@@ -353,12 +366,12 @@ def infer(prompt_text,prompt_wav,target_text,output):
     args.nhead = 16
     args.num_decoder_layers = 12
     args.scale_factor = 1
-    args.prefix_mode = 1
-    args.prepend_bos = False
+    args.prefix_mode = 0
+    args.prepend_bos = True
     args.num_quantizers = 8
-    args.scaling_xformers = False   
-    args.top_k = -100
-    args.temperature = 1.0
+    args.scaling_xformers = False
+    args.top_k = 100
+    args.temperature = 1.1
 
     model = get_model(args)
     if args.checkpoint:
@@ -394,34 +407,40 @@ def infer(prompt_text,prompt_wav,target_text,output):
         print(audio_prompts)
         audio_prompts = audio_prompts.to(device)
 
-    cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+    #cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+    #cn_text_tokenizer = TextTokenizer(backend="espeak")
 
     for n, text in enumerate(args.text.split("|")):
         logging.info(f"synthesize text: {text}")
 
-        to = tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts}.".strip()
-                )
-        print(to)
 
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts}.".strip()
+                    text_tokenizer, text=f"{text_prompts} {text}.".strip()
                 )
             ]
         )
 
-        ttext_tokens, ttext_tokens_lens = text_collater(
-            [
-                tokenize_text(
-                   text_tokenizer, text=f"{text}.".strip()
-                )
-            ]
-        )
+        #mid_text_tokens, mid_text_tokens_lens = text_collater_no(
+        #    [
+        #        tokenize_text(
+        #            text_tokenizer, text=f"-"
+        #        )
+        #    ]
+        #)
 
-        all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
-        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
+
+        #ttext_tokens, ttext_tokens_lens = text_collater_eos(
+        #    [
+        #        tokenize_text(
+        #           text_tokenizer, text=f"{text}.".strip()
+        #        )
+        #    ]
+        #)
+
+        #all_text_tokens = torch.concat((text_tokens,mid_text_tokens,ttext_tokens),1)
+        #all_text_tokens_lens = text_tokens_lens + mid_text_tokens_lens + ttext_tokens_lens 
 
         # synthesis
         enroll_x_lens = None
@@ -429,13 +448,13 @@ def infer(prompt_text,prompt_wav,target_text,output):
             _, enroll_x_lens = text_collater(
                 [
                     tokenize_text(
-                        cn_text_tokenizer, text=f"{text_prompts}.".strip()
+                        text_tokenizer, text=f"{text_prompts}.".strip()
                     )
                 ]
             )
         encoded_frames = model.inference(
-            all_text_tokens.to(device),
-            all_text_tokens_lens.to(device),
+            text_tokens.to(device),
+            text_tokens_lens.to(device),
             audio_prompts,
             enroll_x_lens=enroll_x_lens,
             language_id=torch.IntTensor(language_id).to(device),
