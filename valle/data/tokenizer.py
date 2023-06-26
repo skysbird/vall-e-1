@@ -33,7 +33,7 @@ from phonemizer.separator import Separator
 
 try:
     from pypinyin import Style, pinyin
-    from pypinyin.style._utils import get_finals, get_initials
+    from pypinyin.style._utils import get_finals, get_initials,has_finals
 except Exception:
     pass
 
@@ -45,9 +45,11 @@ class PypinyinBackend:
     """
 
     def no_pinyin(self, ch):
+        # print(ch)
+        ch = ch.replace("_"," ")
         p = self.en_text_tokenizer(ch)
-        print(p)
-        return p[0]
+        e = list('@e'+i for i in p[0]) 
+        return e
 
     
     def __init__(
@@ -88,12 +90,21 @@ class PypinyinBackend:
                         _text, style=Style.TONE3, neutral_tone_with_five=True,errors=self.no_pinyin
                     )
                 ):
+                    if py[0].startswith("@e"):
+                        phones.extend([py[0].lstrip("@e"),
+                                        separator.phone,
+                                       ])
+                        continue
+
                     if all([c in self.punctuation_marks for c in py[0]]):
                         if len(phones):
-                            assert phones[-1] == separator.syllable
-                            phones.pop(-1)
+                            # assert phones[-1] == separator.syllable
+                            if phones[-1] == separator.syllable:
+                                phones.pop(-1)
                         phones.extend(list(py[0]))
                     else:
+                        # print(py[0][-1])
+                        # print(py[0][-1].isalpha())
                         if py[0][-1].isalnum():
                             initial = get_initials(py[0], strict=False)
                             if py[0][-1].isdigit():
@@ -102,13 +113,14 @@ class PypinyinBackend:
                                     + py[0][-1]
                                 )
                             else:
+                                print(has_finals(py[0]))
                                 final = get_finals(py[0], strict=False)
                             phones.extend(
                                 [
                                     initial,
                                     separator.phone,
                                     final,
-                                    separator.syllable,
+                                    separator.syllable if py[0][-1].isdigit() else ""
                                 ]
                             )
                         else:
@@ -126,7 +138,7 @@ class TextTokenizer:
 
     def __init__(
         self,
-        language="cmn",
+        language="en-us",
         backend="espeak",
         separator=Separator(word="_", syllable="-", phone="|"),
         preserve_punctuation=True,
