@@ -46,11 +46,12 @@ class G2PBackend:
     def __init__(
         self,
         backend="g2p_zh_en",
+        language='zh-cn',
         punctuation_marks: Union[str, Pattern] = Punctuation.default_marks(),
     ) -> None:
         self.backend = backend
         self.punctuation_marks = punctuation_marks
-
+        self.language = language
         self.g2p = G2P()
        
 
@@ -67,7 +68,7 @@ class G2PBackend:
             phones = []
             if self.backend == "g2p_zh_en":                                                                                
                 # phonemize
-                phs = self.g2p.g2p(text=_text)
+                phs = self.g2p.g2p(text=_text,language=self.language)
                 for n, py in enumerate(
                     phs
                 ):
@@ -217,6 +218,7 @@ class TextTokenizer:
         elif backend == "g2p_zh_en":
             phonemizer = G2PBackend(
                 backend=backend,
+                language = language,
                 punctuation_marks=punctuation_marks + separator.word,
             )
         else:
