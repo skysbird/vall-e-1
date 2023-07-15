@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import re
+import os
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Pattern, Union
 import logging
@@ -21,8 +22,6 @@ import logging
 import numpy as np
 import torch
 import torchaudio
-import jieba
-from g2p import make_g2p
 from encodec import EncodecModel
 from encodec.utils import convert_audio
 from lhotse.features import FeatureExtractor
@@ -32,6 +31,7 @@ from phonemizer.backend.espeak.language_switch import LanguageSwitch
 from phonemizer.backend.espeak.words_mismatch import WordMismatch
 from phonemizer.punctuation import Punctuation
 from phonemizer.separator import Separator
+from g2p_zh_en import G2P
 
 from subprocess import PIPE, run
 
@@ -42,39 +42,18 @@ except Exception:
     pass
 
 class G2PBackend:
-    """Gi2Pi backend using BigCidian. We have to tokenize (using jieba) the text before using g2p to phonemize.
-    package cited:
-        BigCidian: https://github.com/speechio/BigCiDian
-        G2P: https://github.com/roedoejet/g2p
-        Jieba: https://github.com/fxsjy/jieba
-
-    Because of the one-time work, we import bigcidian to g2p in the setup.py of the package.
-    So there we only load the bigcidian to jieba runtime using jieba.load_userdict(your userdiact path).
-    All files are in the docs folder, including mae-v0.1.tar.gz and userdict.txt in the docs/.
-    Last update: 2024-03-21
-    """
-
+   
     def __init__(
         self,
-        backend="g2p_bigcidian",
+        backend="g2p_zh_en",
         punctuation_marks: Union[str, Pattern] = Punctuation.default_marks(),
     ) -> None:
         self.backend = backend
         self.punctuation_marks = punctuation_marks
 
-        # load user dict for jieba
-        try:
-            jieba.load_userdict(r"../../docs/userdict.txt")
-        except Exception as e:
-            print("load user dict for jieba failed:", e)
+        self.g2p = G2P()
+       
 
-    """
-    Args:
-        text: a list of text, each text is a string
-        separator: a Separator object, which contains word, syllable, and phone
-        Returns:
-            a list of phonemized text, each text is a list of phonemes
-    """
     def phonemize(
         self, text: List[str], separator: Separator, strip=True, njobs=1
     ) -> List[str]:
@@ -85,19 +64,22 @@ class G2PBackend:
             _text = re.sub(" +", " ", _text.strip())      # replace consecutive spaces with a single space
             _text = _text.replace(" ", separator.word)
 
-            if self.backend == "g2p_bigcidian":
-                # tokenize before phonemize
-                seg_list = jieba.cut(_text, cut_all=False)
-                tokenized_text = re.sub(f"{separator.word}+", 
-                                        separator.word, separator.word.join(seg_list))
-                                                                                                
+            phones = []
+            if self.backend == "g2p_zh_en":                                                                                
                 # phonemize
-                transducer = make_g2p('mae', 'mae-ipa', ' ')
-                output_string = transducer(tokenized_text).output_string    # there probably contains multiple consecutive separator.word
-
-                # split
-                words = [word for word in output_string.split(separator.word) if word != '']
-                phones = [phoneme for word in words for phoneme in word.split('-') if phoneme != ''] # split each word by '-' which used in g2p
+                phs = self.g2p.g2p(text=_text)
+                for n, py in enumerate(
+                    phs
+                ):
+                        phones.extend([py])
+                        if py[-1].isdigit():
+                            phones.extend(
+                                [
+                                    separator.syllable
+                                ]
+                            )
+                        else:
+                            assert ValueError
             else:
                 raise NotImplementedError(f"Not implemented backend: {self.backend}")
 
@@ -152,6 +134,9 @@ class PypinyinBackend:
                     else:
                         phones.extend([py[0], separator.syllable])
             elif self.backend == "pypinyin_initials_finals":
+                a =  pinyin(
+                        _text, style=Style.TONE3, neutral_tone_with_five=True,errors=self.no_pinyin
+                    )
                 for n, py in enumerate(
                     pinyin(
                         _text, style=Style.TONE3, neutral_tone_with_five=True,errors=self.no_pinyin
@@ -180,7 +165,6 @@ class PypinyinBackend:
                                     + py[0][-1]
                                 )
                             else:
-                                print(has_finals(py[0]))
                                 final = get_finals(py[0], strict=False)
                             phones.extend(
                                 [
@@ -230,7 +214,7 @@ class TextTokenizer:
                 backend=backend,
                 punctuation_marks=punctuation_marks + separator.word,
             )
-        elif backend == "g2p_bigcidian":
+        elif backend == "g2p_zh_en":
             phonemizer = G2PBackend(
                 backend=backend,
                 punctuation_marks=punctuation_marks + separator.word,
