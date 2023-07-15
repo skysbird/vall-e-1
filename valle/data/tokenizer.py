@@ -62,7 +62,7 @@ class G2PBackend:
         phonemized = []
         for _text in text:
             _text = re.sub(" +", " ", _text.strip())      # replace consecutive spaces with a single space
-            _text = _text.replace(" ", separator.word)
+            #_text = _text.replace(" ", separator.word)
 
             phones = []
             if self.backend == "g2p_zh_en":                                                                                
@@ -226,6 +226,7 @@ class TextTokenizer:
         self.separator = separator
 
     def to_list(self, phonemized: str) -> List[str]:
+        phonemized = phonemized.replace(' ',self.separator.word)
         fields = []
         for word in phonemized.split(self.separator.word):
             # "ɐ    m|iː|n?"    ɹ|ɪ|z|ɜː|v; h|ɪ|z.
@@ -246,6 +247,7 @@ class TextTokenizer:
         phonemized = self.backend.phonemize(
             text, separator=self.separator, strip=strip, njobs=1
         )
+
         return [self.to_list(p) for p in phonemized]
 
 
