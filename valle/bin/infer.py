@@ -174,7 +174,7 @@ def main():
         audio_prompts = audio_prompts.to(device)
 
     #cn_text_tokenizer = TextTokenizer(backend=args.text_extractor)
-    cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+    cn_text_tokenizer = TextTokenizer(backend="g2p_zh_en")
 
 
     for n, text in enumerate(args.text.split("|")):
@@ -187,6 +187,11 @@ def main():
                 )
             ]
         )
+
+        a = tokenize_text(
+                    cn_text_tokenizer, text=f"{text_prompts} {text}".strip()
+                )
+        print(a)
 
         # ttext_tokens, ttext_tokens_lens = text_collater(
         #     [

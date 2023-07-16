@@ -130,6 +130,7 @@ def enhance(filename):
 def index():
     return render_template('index.html')
 
+inited = False
 
 @app.route('/convert', methods=['POST'])
 def convert():
@@ -142,6 +143,8 @@ def convert():
     enhanced = request.form.get("enhanced", type=str, default='0')
     print(enhanced)
     ttext = request.form.get("ttext", type=str, default=None)
+    top_k = request.form.get("top_k", type=int, default=-100)
+    t = request.form.get("t", type=float, default=1.0)
 
     if filename is not None: 
         #新文件处理
@@ -153,16 +156,17 @@ def convert():
         if enhanced == '1':
             enhance(filename)
             #resample 24k
-            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000,ac=1).overwrite_output().run()
+            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000,ac=1).overwrite_output().run()
         else:
             #enhance for asr
             enhance(filename)
-            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-            ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+            ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000,ac=1).overwrite_output().run()
+            ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000,ac=1).overwrite_output().run()
 
     ##s2t
-    asr = get_s2t(f"tmp/{filename}16.wav")
+    #asr = get_s2t(f"tmp/{filename}16.wav")
+    asr = "asr"
 
     ##translate
     if ttext is None:
@@ -172,9 +176,8 @@ def convert():
     print(s2t)
     print(target_text)
 
-
     ##tts
-    infer(s2t,f"tmp/{filename}24.wav",target_text,filename)
+    infer(s2t,f"tmp/{filename}24.wav",target_text,filename,top_k,t)
 
     res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
             "output":f"output/{filename}.wav",
@@ -205,14 +208,14 @@ def upload():
 
 
         #enhance
-        #enhance(filename)
+        enhance(filename)
 
         #resample 24k
-        #ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        #ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        ffmpeg.input(f"tmp/{filename}_enhanced.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
 
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
-        ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
+        #ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}16.wav",ar=16000).overwrite_output().run()
+        #ffmpeg.input(f"tmp/{filename}.wav").output(f"tmp/{filename}24.wav",ar=24000).overwrite_output().run()
 
     #s2t
     s2t = get_s2t(f"tmp/{filename}16.wav")
@@ -223,7 +226,7 @@ def upload():
 
 
     #tts
-    infer(s2t,f"tmp/{filename}24.wav",target_text,filename)
+    infer(s2t,f"tmp/{filename}24.wav",target_text,filename,top_k=50)
 
     res = {"text":f"输入语音文字为:{s2t}\n 翻译为英文为:{target_text}",
             "output":f"output/{filename}.wav",
@@ -338,7 +341,9 @@ import torchaudio
 
 #python3 bin/infer.py --output-dir infer/demos     --model-name valle --norm-first true --add-prenet false     --share-embedding true --norm-first true --add-prenet false     --text-prompts "甚至 出现 交易 几乎 停 滞 的 情况"     --audio-prompts ./prompts/ch_24k.wav     --text "There was even a situation where the transaction almost stagnated."     --checkpoint=${exp_dir}/best-valid-loss.pt
 
-def infer(prompt_text,prompt_wav,target_text,output):
+def infer(prompt_text,prompt_wav,target_text,output,top_k=-100,t=1.0):
+
+    global inited
     language_id = [2] #2 english,1 chinese
     args = AttributeDict()
     text_tokenizer = TextTokenizer(backend="espeak")
@@ -366,25 +371,29 @@ def infer(prompt_text,prompt_wav,target_text,output):
     args.nhead = 16
     args.num_decoder_layers = 12
     args.scale_factor = 1
-    args.prefix_mode = 0
+    args.prefix_mode = 1
     args.prepend_bos = True
     args.num_quantizers = 8
     args.scaling_xformers = False
-    args.top_k = 100
-    args.temperature = 1.1
+    args.top_k = top_k
+    args.temperature = t
 
-    model = get_model(args)
-    if args.checkpoint:
-        checkpoint = torch.load(args.checkpoint, map_location=device)
-        missing_keys, unexpected_keys = model.load_state_dict(
-            checkpoint["model"], strict=True
-        )
-        assert not missing_keys
-        # from icefall.checkpoint import save_checkpoint
-        # save_checkpoint(f"{args.checkpoint}", model=model)
+    global model
+    if not inited:
+        model = get_model(args)
+        if args.checkpoint:
+            checkpoint = torch.load(args.checkpoint, map_location=device)
+            missing_keys, unexpected_keys = model.load_state_dict(
+                checkpoint["model"], strict=True
+            )
+            assert not missing_keys
+            # from icefall.checkpoint import save_checkpoint
+            # save_checkpoint(f"{args.checkpoint}", model=model)
 
-    model.to(device)
-    model.eval()
+        model.to(device)
+        model.eval()
+        inited = True
+    print(f"inited={inited}")
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
@@ -394,7 +403,7 @@ def infer(prompt_text,prompt_wav,target_text,output):
     if args.audio_prompts:
         for n, audio_file in enumerate(args.audio_prompts.split("|")):
             encoded_frames = tokenize_audio(audio_tokenizer, audio_file)
-            if True:
+            if False:
                 samples = audio_tokenizer.decode(encoded_frames)
                 torchaudio.save(
                     f"{args.output_dir}/{output}_test.wav", samples[0].detach().cpu(), 24000
@@ -407,7 +416,7 @@ def infer(prompt_text,prompt_wav,target_text,output):
         print(audio_prompts)
         audio_prompts = audio_prompts.to(device)
 
-    #cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+    cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
     #cn_text_tokenizer = TextTokenizer(backend="espeak")
 
     for n, text in enumerate(args.text.split("|")):
@@ -417,7 +426,7 @@ def infer(prompt_text,prompt_wav,target_text,output):
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    text_tokenizer, text=f"{text_prompts} {text}.".strip()
+                    cn_text_tokenizer, text=f"{text_prompts}. {text}".strip()
                 )
             ]
         )
@@ -448,7 +457,7 @@ def infer(prompt_text,prompt_wav,target_text,output):
             _, enroll_x_lens = text_collater(
                 [
                     tokenize_text(
-                        text_tokenizer, text=f"{text_prompts}.".strip()
+                        cn_text_tokenizer, text=f"{text_prompts}".strip()
                     )
                 ]
             )

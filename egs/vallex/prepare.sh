@@ -22,6 +22,9 @@ dl_dir=$PWD/download
 # dataset_parts="-p dev-clean -p test-clean"  # debug
 dataset_parts="--dataset-parts all"  # all
 
+#text_extractor="pypinyin_initials_finals"
+#text_extractor="g2p_bigcidian"
+text_extractor="g2p_zh_en"
 audio_extractor="Encodec"  # or Fbank
 audio_feats_dir=data/tokenized
 
@@ -50,7 +53,7 @@ if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   if [ ! -d $dl_dir/LibriTTS/dev-other ]; then
     # lhotse download libritts $dl_dir
     lhotse download libritts ${dataset_parts} $dl_dir
-    lhotse download aishell3 $dl_dir
+    lhotse download aishell $dl_dir
   fi
 fi
 
@@ -65,11 +68,11 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
     touch data/manifests/.libritts.done
   fi
 
-  #if [ ! -e data/manifests/.aishell.done ]; then
-  #  log "Stage 1: Prepare aishell manifest"
-  #  lhotse prepare aishell $dl_dir/aishell data/manifests
-  #  touch data/manifests/.aishell.done
-  #fi
+  if [ ! -e data/manifests/.aishell.done ]; then
+    log "Stage 1: Prepare aishell manifest"
+    lhotse prepare aishell $dl_dir data/manifests
+    touch data/manifests/.aishell.done
+  fi
 
 
 fi
@@ -79,7 +82,8 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   log "Stage 2: Tokenize/Fbank LibriTTS"
   mkdir -p ${audio_feats_dir}
   if [ ! -e ${audio_feats_dir}/.libritts.tokenize.done ]; then
-    python3 bin/tokenizer.py --dataset-parts "${dataset_parts}" \
+    python3 bin/tokenizer_bin.py --dataset-parts "${dataset_parts}" \
+	--text-extractor ${text_extractor} \
         --audio-extractor ${audio_extractor} \
         --batch-duration 400 \
         --src-dir "data/manifests" \
@@ -112,17 +116,34 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
     #  ${audio_feats_dir}/aishell_cuts_test.jsonl.gz \
     #  ${audio_feats_dir}/aishell_cuts_test.jsonl.gz
 
+
+    lhotse subset --first 400 \
+        ${audio_feats_dir}/aishell_cuts_dev.jsonl.gz \
+        ${audio_feats_dir}/cuts_dev_400.jsonl.gz
+
+    lhotse subset --last 13926 \
+        ${audio_feats_dir}/aishell_cuts_dev.jsonl.gz \
+        ${audio_feats_dir}/cuts_dev_others.jsonl.gz
+
+    ## train
+    #lhotse combine \
+    #    ${audio_feats_dir}/cuts_dev_others.jsonl.gz \
+    #    ${audio_feats_dir}/aishell_cuts_train.jsonl.gz \
+    #    ${audio_feats_dir}/cuts_train.jsonl.gz
+
+
       # train
       lhotse combine \
         ${audio_feats_dir}/libritts_cuts_train-clean-100.jsonl.gz \
-        ${audio_feats_dir}/aishell3_cuts_train.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-clean-360.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-other-500.jsonl.gz \
+        ${audio_feats_dir}/cuts_dev_others.jsonl.gz \
+        ${audio_feats_dir}/aishell_cuts_train.jsonl.gz \
         ${audio_feats_dir}/cuts_train.jsonl.gz
 
       # dev
       lhotse combine \
-        ${audio_feats_dir}/aishell3_cuts_test.jsonl.gz \
+        ${audio_feats_dir}/cuts_dev_400.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_dev-clean.jsonl.gz \
         ${audio_feats_dir}/cuts_dev.jsonl.gz
     else  # debug
