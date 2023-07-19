@@ -185,7 +185,8 @@ def main():
 
     #print(audio_prompts)
     #cn_text_tokenizer = TextTokenizer(backend=args.text_extractor)
-    cn_text_tokenizer = TextTokenizer(backend="g2p_zh_en")
+    text_tokenizer = TextTokenizer(backend="g2p_zh_en",language = 'en-us')
+    cn_text_tokenizer = TextTokenizer(backend="g2p_zh_en",language = 'zh-cn')
 
 
     for n, text in enumerate(args.text.split("|")):
@@ -194,27 +195,39 @@ def main():
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts} {text}".strip()
+                    cn_text_tokenizer, text=f"{text_prompts} "
                 )
             ]
         )
 
+        a =    tokenize_text(
+                    cn_text_tokenizer, text=f"{text_prompts} "
+                )
 
-        # ttext_tokens, ttext_tokens_lens = text_collater(
-        #     [
-        #         tokenize_text(
-        #            text_tokenizer, text=f"{text}".strip()
-        #         )
-        #     ]
-        # )
+        print(a)
+
+        ttext_tokens, ttext_tokens_lens = text_collater(
+             [
+                 tokenize_text(
+                    text_tokenizer, text=f"{text}".strip()
+                 )
+             ]
+         )
+
+        a = tokenize_text(
+                    text_tokenizer, text=f"{text}".strip()
+                 )
+
+        print(a)
+
 
 
         #print(text_tokens.size())
         #print(ttext_tokens.size())
 
-        # all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
+        all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
         #print(all_text_tokens.size())
-        # all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
+        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
         #print(text_tokens_lens)
         #print(ttext_tokens_lens)
         #print(all_text_tokens_lens)
@@ -238,8 +251,8 @@ def main():
                     ]
                 )
             encoded_frames = model.inference(
-                text_tokens.to(device),
-                text_tokens_lens.to(device),
+                all_text_tokens.to(device),
+                all_text_tokens_lens.to(device),
                 audio_prompts,
                 enroll_x_lens=enroll_x_lens,
                 language_id=torch.IntTensor(language_id).to(device),

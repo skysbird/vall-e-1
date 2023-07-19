@@ -255,6 +255,7 @@ class TextTokenizer:
 
 def tokenize_text(tokenizer: TextTokenizer, text: str) -> List[str]:
     phonemes = tokenizer([text.strip()])
+    print(phonemes[0])
     return phonemes[0]  # k2symbols
 
 
