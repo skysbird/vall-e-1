@@ -415,8 +415,10 @@ def infer(prompt_text,prompt_wav,target_text,output,top_k=-100,t=1.0):
         audio_prompts = torch.concat(audio_prompts, dim=-1).transpose(2, 1)
         print(audio_prompts)
         audio_prompts = audio_prompts.to(device)
+    
 
-    cn_text_tokenizer = TextTokenizer(backend="pypinyin_initials_finals")
+    text_tokenizer = TextTokenizer(backend="g2p_zh_en")
+    cn_text_tokenizer = TextTokenizer(backend="g2p_zh_en",language='zh-cn')
     #cn_text_tokenizer = TextTokenizer(backend="espeak")
 
     for n, text in enumerate(args.text.split("|")):
@@ -426,10 +428,16 @@ def infer(prompt_text,prompt_wav,target_text,output,top_k=-100,t=1.0):
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts}. {text}".strip()
+                    cn_text_tokenizer, text=f"{text_prompts}. "
                 )
             ]
         )
+
+        #a =        tokenize_text(
+        #            cn_text_tokenizer, text=f"{text_prompts} - - - {text}".strip()
+        #        )
+        #print(a)
+
 
         #mid_text_tokens, mid_text_tokens_lens = text_collater_no(
         #    [
@@ -440,16 +448,16 @@ def infer(prompt_text,prompt_wav,target_text,output,top_k=-100,t=1.0):
         #)
 
 
-        #ttext_tokens, ttext_tokens_lens = text_collater_eos(
-        #    [
-        #        tokenize_text(
-        #           text_tokenizer, text=f"{text}.".strip()
-        #        )
-        #    ]
-        #)
+        ttext_tokens, ttext_tokens_lens = text_collater_eos(
+            [
+                tokenize_text(
+                   text_tokenizer, text=f"{text}.".strip()
+                )
+            ]
+        )
 
-        #all_text_tokens = torch.concat((text_tokens,mid_text_tokens,ttext_tokens),1)
-        #all_text_tokens_lens = text_tokens_lens + mid_text_tokens_lens + ttext_tokens_lens 
+        all_text_tokens = torch.concat((text_tokens, ttext_tokens),1)
+        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
 
         # synthesis
         enroll_x_lens = None
@@ -462,8 +470,8 @@ def infer(prompt_text,prompt_wav,target_text,output,top_k=-100,t=1.0):
                 ]
             )
         encoded_frames = model.inference(
-            text_tokens.to(device),
-            text_tokens_lens.to(device),
+            all_text_tokens.to(device),
+            all_text_tokens_lens.to(device),
             audio_prompts,
             enroll_x_lens=enroll_x_lens,
             language_id=torch.IntTensor(language_id).to(device),

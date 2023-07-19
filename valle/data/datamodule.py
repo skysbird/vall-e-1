@@ -34,7 +34,7 @@ from lhotse.dataset import (
 )
 from lhotse.dataset.input_strategies import OnTheFlyFeatures
 from lhotse.utils import fix_random_seed
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader,BatchSampler
 
 from valle.data.collation import get_text_token_collater
 from valle.data.dataset import SpeechSynthesisDataset
@@ -310,6 +310,7 @@ class TtsDataModule:
                 max_duration=self.args.max_duration,
                 shuffle=self.args.shuffle,
                 num_buckets=self.args.num_buckets,
+                shuffle_buffer_size=10000,
                 drop_last=True,
             )
         else:
@@ -333,6 +334,15 @@ class TtsDataModule:
         # previously been set in the main process.
         seed = torch.randint(0, 100000, ()).item()
         worker_init_fn = _SeedWorkers(seed)
+
+        #train_dl = DataLoader(
+        #    train,
+        #    batch_sampler=BatchSampler(train_sampler),
+        #    #batch_size=None,
+        #    num_workers=self.args.num_workers,
+        #    persistent_workers=False,
+        #    worker_init_fn=worker_init_fn,
+        #)
 
         train_dl = DataLoader(
             train,

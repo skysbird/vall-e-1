@@ -121,12 +121,20 @@ def get_args():
         help="Do continual task.",
     )
 
+
+    parser.add_argument(
+        "--lang",
+        type=int,
+        default=2,
+        help="language",
+    )
+
+
     return parser.parse_args()
 
 LAN_ID_DICT = {}
 LAN_ID_DICT['Chinese'] = 1;
 LAN_ID_DICT['English'] = 2;
-language_id = [2] #must []
 
 @torch.no_grad()
 def main():
@@ -134,6 +142,8 @@ def main():
     text_tokenizer = TextTokenizer(backend=args.text_extractor)
     text_collater = get_text_token_collater(args.text_tokens)
     audio_tokenizer = AudioTokenizer()
+    language_id = [args.lang] #must []
+    print(f"lang={language_id}")
 
     device = torch.device("cpu")
     if torch.cuda.is_available():
@@ -173,6 +183,7 @@ def main():
         audio_prompts = torch.concat(audio_prompts, dim=-1).transpose(2, 1)
         audio_prompts = audio_prompts.to(device)
 
+    #print(audio_prompts)
     #cn_text_tokenizer = TextTokenizer(backend=args.text_extractor)
     cn_text_tokenizer = TextTokenizer(backend="g2p_zh_en")
 
@@ -188,10 +199,6 @@ def main():
             ]
         )
 
-        a = tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts} {text}".strip()
-                )
-        print(a)
 
         # ttext_tokens, ttext_tokens_lens = text_collater(
         #     [

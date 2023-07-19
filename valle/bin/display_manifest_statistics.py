@@ -42,7 +42,8 @@ def get_args():
 def main():
     args = get_args()
     manifest_dir = args.manifest_dir or Path("data/tokenized")
-    for part in ["train", "dev", "test"]:
+    #for part in ["train", "dev", "test"]:
+    for part in ["train", "dev" ]:
         print(f"##  {part}")
         cuts = load_manifest_lazy(manifest_dir / f"cuts_{part}.jsonl.gz")
         cuts.describe()

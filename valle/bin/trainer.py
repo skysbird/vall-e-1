@@ -1004,7 +1004,7 @@ def run(rank, world_size, args):
         sampler_state_dict = None
 
     dataset = TtsDataModule(args)
-    train_cuts = dataset.train_cuts()
+    train_cuts = dataset.train_cuts().to_eager().shuffle() #shuffle for zh-eng conrus
     valid_cuts = dataset.dev_cuts()
 
     train_cuts = filter_short_and_long_utterances(
