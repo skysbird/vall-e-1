@@ -136,8 +136,8 @@ def get_model(params: AttributeDict) -> nn.Module:
     return model
 
 
-from vall_e.ar import AR
-from vall_e.nar import NAR
+from vall_e import AR
+from vall_e import NAR
 
 def get_model2(params: AttributeDict) -> nn.Module:
     if params.model_name.lower() in ["ar"]:
