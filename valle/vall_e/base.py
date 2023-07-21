@@ -1,6 +1,6 @@
 import math
 from functools import partial
-from typing import Literal, overload
+from typing import Iterator, Literal, Tuple, overload
 
 import torch
 import torch.nn.functional as F
@@ -370,6 +370,34 @@ class Base(nn.Module):
         else:
             cat = partial(_join, sep=sep)
         return [*map(cat, zip(*l))]
+
+    def stage_parameters(self, stage: int = 1) -> Iterator[nn.Parameter]:
+        assert stage > 0
+        if stage == 1:
+            for name, param in self.named_parameters():
+                if name.startswith("ar_"):
+                    print(f" AR parameter: {name}")
+                    yield param
+
+        if stage == 2:
+            for name, param in self.named_parameters():
+                if name.startswith("nar_"):
+                    print(f"NAR parameter: {name}")
+                    yield param
+
+    def stage_named_parameters(
+        self, stage: int = 1
+        ) -> Iterator[Tuple[str, nn.Parameter]]:
+        assert stage > 0
+        if stage == 1:
+            for pair in self.named_parameters():
+                if pair[0].startswith("ar_"):
+                    yield pair
+
+        if stage == 2:
+            for pair in self.named_parameters():
+                if pair[0].startswith("nar_"):
+                    yield pair
 
     @overload
     def forward(
