@@ -134,3 +134,24 @@ def get_model(params: AttributeDict) -> nn.Module:
         )
 
     return model
+
+
+from vall_e.ar import AR
+from vall_e.nar import NAR
+
+def get_model2(params: AttributeDict) -> nn.Module:
+    if params.model_name.lower() in ["ar"]:
+        model = AR(
+            1024,
+            d_model=1024,
+            n_heads=16,
+            n_layers=12,
+        )
+    elif params.model_name.lower() in ["nar"]:
+        model = NAR(
+            1024,
+            d_model=1024,
+            n_heads=16,
+            n_layers=12,
+        )
+    return model

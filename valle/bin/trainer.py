@@ -63,7 +63,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 
 from valle.data import TtsDataModule
-from valle.models import add_model_arguments, get_model
+from valle.models import add_model_arguments, get_model, get_model2
 from valle.modules.optim import Eden, Eve, ScaledAdam
 from valle.modules.scheduler import get_scheduler
 
@@ -526,14 +526,23 @@ def compute_loss(
     language_id = batch["language"].to(device)
 
     #logging.info(f"language id={batch['text']}")
+    # with torch.set_grad_enabled(is_training):
+    #     predicts, loss, metrics = model(
+    #         x=text_tokens,
+    #         x_lens=text_tokens_lens,
+    #         y=audio_features,
+    #         y_lens=audio_features_lens,
+    #         language_id=language_id,
+    #         train_stage=params.train_stage,
+    #     )
+
     with torch.set_grad_enabled(is_training):
         predicts, loss, metrics = model(
-            x=text_tokens,
-            x_lens=text_tokens_lens,
-            y=audio_features,
-            y_lens=audio_features_lens,
-            language_id=language_id,
-            train_stage=params.train_stage,
+            text_list=text_tokens,
+            proms_list=audio_features,
+            resp_list=audio_features
+            # language_id=language_id,
+            # train_stage=params.train_stage,
         )
 
     assert loss.requires_grad == is_training
@@ -852,6 +861,7 @@ def filter_short_and_long_utterances(
     return cuts
 
 
+
 def run(rank, world_size, args):
     """
     Args:
@@ -896,7 +906,7 @@ def run(rank, world_size, args):
     logging.info(params)
 
     logging.info("About to create model")
-    model = get_model(params)
+    model = get_model2(params)
     with open(f"{params.exp_dir}/model.txt", "w") as f:
         print(model)
         print(model, file=f)
