@@ -537,8 +537,8 @@ class Base(nn.Module):
 
         metrics = {}
 
-        metrics["ArTop10Accuracy"] = self.ar_accuracy_metric(
-                logits.detach(), torch.cat(y_list)
-            ).item() 
+        # metrics["ArTop10Accuracy"] = self.ar_accuracy_metric(
+        #         logits.detach(), torch.cat(y_list)
+        #     ).item() 
         
         return (ret,total_loss, metrics)
