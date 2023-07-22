@@ -523,4 +523,6 @@ class Base(nn.Module):
             logits = torch.stack([hi[-1] for hi in h_list])
             ret = Categorical(logits=logits / sampling_temperature).sample()
 
-        return ret
+        total_loss = self.loss
+        metrics = {}
+        return (ret,total_loss, metrics)
