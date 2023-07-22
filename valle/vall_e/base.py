@@ -9,6 +9,8 @@ from torch import Tensor, einsum, nn
 from torch.distributions import Categorical
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.checkpoint import checkpoint
+from torchmetrics.classification import MulticlassAccuracy
+
 
 
 def _create_mask(l, device):
@@ -353,6 +355,14 @@ class Base(nn.Module):
 
         self.classifier = nn.Linear(d_model, n_resp_tokens)
 
+        self.ar_accuracy_metric = MulticlassAccuracy(
+            n_tokens + 1,
+            top_k=10,
+            average="micro",
+            multidim_average="global",
+            ignore_index=n_tokens,
+        )
+
     @property
     def stop_token(self):
         if not self.use_stop_token:
@@ -523,6 +533,12 @@ class Base(nn.Module):
             logits = torch.stack([hi[-1] for hi in h_list])
             ret = Categorical(logits=logits / sampling_temperature).sample()
 
-        total_loss = self.loss
+        total_loss = self.loss['nll']
+
         metrics = {}
+
+        metrics["ArTop10Accuracy"] = self.ar_accuracy_metric(
+                logits.detach(), torch.cat(y_list)
+            ).item() 
+        
         return (ret,total_loss, metrics)
