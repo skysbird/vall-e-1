@@ -154,6 +154,7 @@ class PromptedPrecomputedFeatures(PrecomputedFeatures):
             ),
         )
 
+
         return PromptedFeatures(prompts, features), PromptedFeatures(
             prompts_lens, features_lens
         )

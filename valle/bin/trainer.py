@@ -537,10 +537,18 @@ def compute_loss(
     #     )
 
     with torch.set_grad_enabled(is_training):
+        aa = model(
+            text_list=list(text_tokens),
+            proms_list=list(audio_features.to(torch.int64)),
+            resp_list=list(audio_features[...,1].to(torch.int64))
+            # language_id=language_id,
+            # train_stage=params.train_stage,
+        )
+        print(aa)
         predicts, loss, metrics = model(
-            text_list=text_tokens,
-            proms_list=audio_features,
-            resp_list=audio_features
+            text_list=list(text_tokens),
+            proms_list=list(audio_features.to(torch.int64)),
+            resp_list=list(audio_features[...,1].to(torch.int64))
             # language_id=language_id,
             # train_stage=params.train_stage,
         )
@@ -930,7 +938,7 @@ def run(rank, world_size, args):
         logging.info("Using DDP")
         model = DDP(model, device_ids=[rank], find_unused_parameters=True)
 
-    if params.train_stage:
+    if False and params.train_stage:
         _model = model.module if isinstance(model, DDP) else model
         model_parameters = _model.stage_parameters(params.train_stage)
     else:

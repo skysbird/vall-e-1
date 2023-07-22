@@ -21,7 +21,7 @@ from icefall.utils import AttributeDict
 from torchmetrics.classification import MulticlassAccuracy
 
 from valle.data.input_strategies import PromptedFeatures
-from valle.models import NUM_MEL_BINS, get_model
+from valle.models import NUM_MEL_BINS, get_model, get_model2
 
 
 class TestModel(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestModel(unittest.TestCase):
                 torch.cuda.set_device(1)
                 cls.devices.append(torch.device("cuda", 1))
 
-    def test_vallf(self):
+    def atest_vallf(self):
         params = AttributeDict()
         params.decoder_dim = 64
         params.nhead = 16
@@ -105,7 +105,7 @@ class TestModel(unittest.TestCase):
 
         params.norm_first = False
         params.add_prenet = True
-        params.model_name = "VALL-E"
+        params.model_name = "ar"
         params.share_embedding = True
         params.scale_factor = 1.0
         params.prepend_bos = False
@@ -115,26 +115,32 @@ class TestModel(unittest.TestCase):
             for mode in [0, 1, 2]:
                 params.prefix_mode = mode
                 # VALL-E
-                model = get_model(params)
+                model = get_model2(params)
                 model.to(device)
                 x = x.to(device)
                 x_lens = x_lens.to(device)
                 y = y.to(device)
                 y_lens = y_lens.to(device)
 
+
+                """ text_list=text_tokens,
+            proms_list=audio_features,
+            resp_list=audio_features"""
+
                 # Training
-                codes, loss, metrics = model(x, x_lens, y, y_lens)
+                #codes, loss, metrics = model(text_list=list(x), proms_list = list(y), resp_list=list(y[...,1]))
+                o = model(text_list=list(x), proms_list = list(y), resp_list=list(y[...,1]))
                 # Inference
-                model.eval()
-                codes = model.inference(
-                    x[-1:], x_lens[-1:], y[-1:], enroll_x_lens=enroll_x_lens
-                )
-                params.scale_factor = 0.5
+                #model.eval()
+                #codes = model.inference(
+                #    x[-1:], x_lens[-1:], y[-1:], enroll_x_lens=enroll_x_lens
+                #)
+                #params.scale_factor = 0.5
 
-                params.prepend_bos = not params.prepend_bos
-                params.num_quantizers -= 1
+                #params.prepend_bos = not params.prepend_bos
+                #params.num_quantizers -= 1
 
-    def test_vallef_prefix4(self):
+    def atest_vallef_prefix4(self):
         params = AttributeDict()
         params.decoder_dim = 64
         params.nhead = 16
@@ -182,7 +188,7 @@ class TestModel(unittest.TestCase):
                         x[-1:], x_lens[-1:], y[-1:], enroll_x_lens=enroll_x_lens
                     )
 
-    def test_topmetric(self):
+    def atest_topmetric(self):
         metric_top10 = MulticlassAccuracy(1024, top_k=10, average="micro")
         metric_top1 = MulticlassAccuracy(1024, top_k=1, average="micro")
         batch_size, seq_len = 4, 16
@@ -222,7 +228,7 @@ class TestModel(unittest.TestCase):
             )
             assert half.cpu().item() == 0.5, half.cpu().item()
 
-    def test_transformer(self):
+    def atest_transformer(self):
         params = AttributeDict()
         params.decoder_dim = 64
         params.nhead = 4

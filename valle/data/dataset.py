@@ -98,6 +98,8 @@ class SpeechSynthesisDataset(torch.utils.data.Dataset):
         #torch.IntTensor
 
         language_id = [LAN_ID_DICT[cut.supervisions[0].language] for cut in cuts]
+
+
         return {
             "utt_id": [cut.id for cut in cuts],
             "text": [cut.supervisions[0].text for cut in cuts],
