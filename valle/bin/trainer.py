@@ -938,7 +938,7 @@ def run(rank, world_size, args):
         logging.info("Using DDP")
         model = DDP(model, device_ids=[rank], find_unused_parameters=True)
 
-    if False and params.train_stage:
+    if params.train_stage:
         _model = model.module if isinstance(model, DDP) else model
         model_parameters = _model.stage_parameters(params.train_stage)
     else:
