@@ -49,14 +49,6 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--text-prompts",
-        type=str,
-        default="",
-        help="Text prompts which are separated by |.",
-    )
-
-
-    parser.add_argument(
         "--audio-prompts",
         type=str,
         default="",
@@ -165,7 +157,6 @@ def main():
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
-    text_prompts = " ".join(args.text_prompts.split("|"))
 
     audio_prompts = []
     if args.audio_prompts:
@@ -179,7 +170,6 @@ def main():
 
             audio_prompts.append(encoded_frames[0][0])
 
-        assert len(args.text_prompts.split("|")) == len(audio_prompts)
         audio_prompts = torch.concat(audio_prompts, dim=-1).transpose(2, 1)
         audio_prompts = audio_prompts.to(device)
 
@@ -195,42 +185,12 @@ def main():
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts} "
+                    cn_text_tokenizer, text=f"{text}"
                 )
             ]
         )
 
-        a =    tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts} "
-                )
-
-        print(a)
-
-        ttext_tokens, ttext_tokens_lens = text_collater(
-             [
-                 tokenize_text(
-                    text_tokenizer, text=f"{text}".strip()
-                 )
-             ]
-         )
-
-        a = tokenize_text(
-                    text_tokenizer, text=f"{text}".strip()
-                 )
-
-        print(a)
-
-
-
-        #print(text_tokens.size())
-        #print(ttext_tokens.size())
-
-        all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
-        #print(all_text_tokens.size())
-        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
-        #print(text_tokens_lens)
-        #print(ttext_tokens_lens)
-        #print(all_text_tokens_lens)
+       
 
         # synthesis
         if args.continual:
@@ -241,20 +201,10 @@ def main():
                 audio_prompts,
             )
         else:
-            enroll_x_lens = None
-            if text_prompts:
-                _, enroll_x_lens = text_collater(
-                    [
-                        tokenize_text(
-                            cn_text_tokenizer, text=f"{text_prompts}".strip()
-                        )
-                    ]
-                )
             encoded_frames = model.inference(
-                all_text_tokens.to(device),
-                all_text_tokens_lens.to(device),
+                text_tokens.to(device),
+                text_tokens_lens.to(device),
                 audio_prompts,
-                enroll_x_lens=enroll_x_lens,
                 language_id=torch.IntTensor(language_id).to(device),
                 top_k=args.top_k,
                 temperature=args.temperature,
