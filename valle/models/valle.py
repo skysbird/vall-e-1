@@ -988,7 +988,6 @@ class VALLE(VALLF):
         x: torch.Tensor,
         x_lens: torch.Tensor,
         y: torch.Tensor,
-        enroll_x_lens: torch.Tensor,
         language_id: torch.Tensor,
         top_k: int = -100,
         temperature: float = 1.0,
@@ -1024,10 +1023,10 @@ class VALLE(VALLF):
 
         text_len = x_lens.max()
         prompts = y
-        prefix_len = y.shape[1]
+        # prefix_len = y.shape[1]
 
         print(f"text_len={text_len}")
-        print(f"prefix_len={prefix_len}")
+        # print(f"prefix_len={prefix_len}")
 
         # AR Decoder
         # TODO: Managing decoder steps avoid repetitive computation
@@ -1114,7 +1113,7 @@ class VALLE(VALLF):
 
             y = torch.concat([y, samples], dim=1)
 
-        codes = [y[:, prefix_len + int(self.ar_audio_prepend_bos) :]]
+        codes = [y[:, int(self.ar_audio_prepend_bos) :]]
         if self.num_quantizers == 1:
             return torch.stack(codes, dim=-1)
 
@@ -1124,17 +1123,20 @@ class VALLE(VALLF):
         )
 
         if self.prefix_mode in [2, 4]:  # Exclude enrolled_phonemes
-            enrolled_len = enroll_x_lens.max().item()
-            # SOS + Synthesis Text + EOS
-            text = torch.concat(
-                [
-                    text[:, :1],
-                    text[:, enrolled_len - 1 :],
-                ],
-                dim=1,
-            )
-            text_len = text_len - (enrolled_len - 2)
-            assert text.shape[0] == 1
+            raise NotImplemented(
+                        "not implement"
+                    )
+            # enrolled_len = enroll_x_lens.max().item()
+            # # SOS + Synthesis Text + EOS
+            # text = torch.concat(
+            #     [
+            #         text[:, :1],
+            #         text[:, enrolled_len - 1 :],
+            #     ],
+            #     dim=1,
+            # )
+            # text_len = text_len - (enrolled_len - 2)
+            # assert text.shape[0] == 1
 
         x = self.nar_text_embedding(text)
         x = self.nar_text_prenet(x)
@@ -1154,7 +1156,7 @@ class VALLE(VALLF):
                 xy_dec, _ = self.nar_decoder(
                     (xy_pos, self.nar_stage_embeddings[i].weight)
                 )
-                logits = predict_layer(xy_dec[:, text_len + prefix_len :])
+                logits = predict_layer(xy_dec[:, text_len  :])
 
                 #print(logits.size())
                 if temperature != 1.0:
@@ -1168,13 +1170,13 @@ class VALLE(VALLF):
                 codes.append(samples)
 
                 if i < self.num_quantizers - 2:
-                    y_emb[:, :prefix_len] += embedding_layer(
+                    y_emb[:, :] += embedding_layer(
                         prompts[..., i + 1]
                     )
-                    y_emb[:, prefix_len:] += embedding_layer(samples)
+                    y_emb[:, :] += embedding_layer(samples)
         else:
             for j in range(1, self.num_quantizers):
-                y_emb[:, :prefix_len] += self.nar_audio_embeddings[j](
+                y_emb[:, :] += self.nar_audio_embeddings[j](
                     prompts[..., j]
                 )
 
@@ -1191,13 +1193,13 @@ class VALLE(VALLF):
                 xy_dec, _ = self.nar_decoder(
                     (xy_pos, self.nar_stage_embeddings[i].weight)
                 )
-                logits = predict_layer(xy_dec[:, text_len + prefix_len :])
+                logits = predict_layer(xy_dec[:, text_len  :])
 
                 samples = torch.argmax(logits, dim=-1)
                 codes.append(samples)
 
                 if i < self.num_quantizers - 2:
-                    y_emb[:, prefix_len:] += embedding_layer(samples)
+                    y_emb[:, :] += embedding_layer(samples)
 
         assert len(codes) == self.num_quantizers
         return torch.stack(codes, dim=-1)
