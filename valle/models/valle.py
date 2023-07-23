@@ -1023,7 +1023,7 @@ class VALLE(VALLF):
 
         text_len = x_lens.max()
         prompts = y
-        # prefix_len = y.shape[1]
+        prefix_len = y.shape[1]
 
         print(f"text_len={text_len}")
         # print(f"prefix_len={prefix_len}")
@@ -1176,7 +1176,7 @@ class VALLE(VALLF):
                     y_emb[:, :] += embedding_layer(samples)
         else:
             for j in range(1, self.num_quantizers):
-                y_emb[:, :] += self.nar_audio_embeddings[j](
+                y_emb[:, :prefix_len] += self.nar_audio_embeddings[j](
                     prompts[..., j]
                 )
 
