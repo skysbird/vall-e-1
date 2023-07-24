@@ -339,8 +339,10 @@ class VALLF(nn.Module):
         if self.prefix_mode == 0:
             # no prefix
             prefix_len = 0
-            y_emb = self.nar_audio_embeddings[0](y)
-            for j in range(1, nar_stage):
+            # y_emb = self.nar_audio_embeddings[0](y)
+            y_emb = self.nar_audio_embeddings[1](codes[..., 1])
+
+            for j in range(2, nar_stage):
                 # Formula (4) (5)
                 y_emb = y_emb + self.nar_audio_embeddings[j](codes[..., j])
         elif self.prefix_mode == 1:
