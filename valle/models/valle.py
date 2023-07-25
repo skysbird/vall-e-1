@@ -832,25 +832,27 @@ class VALLE(VALLF):
             x = self.ar_text_prenet(x)
             x = self.ar_text_position(x)
 
-            y_len = y_lens.max() + int(self.ar_audio_prepend_bos)
+            #TODO remove acoustic prompt
+
+            # y_len = y_lens.max() + int(self.ar_audio_prepend_bos)
 
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
-                (0, y_len),
+                (0, 0),
                 value=True,
             )
-            y_attn_mask = F.pad(
-                torch.triu(
-                    torch.ones(y_len, y_len, dtype=torch.bool, device=x.device),
-                    diagonal=1,
-                ),
-                (x_len, 0),
-                value=False,
-            )
-            xy_attn_mask = torch.concat([x_attn_mask, y_attn_mask], dim=0)
+            # y_attn_mask = F.pad(
+            #     torch.triu(
+            #         torch.ones(y_len, y_len, dtype=torch.bool, device=x.device),
+            #         diagonal=1,
+            #     ),
+            #     (x_len, 0),
+            #     value=False,
+            # )
+            xy_attn_mask = torch.concat([x_attn_mask], dim=0)
 
             # merge key padding and attention masks
-            bsz, src_len = x.shape[0], x_len + y_len
+            bsz, src_len = x.shape[0], x_len 
             _xy_padding_mask = (
                 ar_xy_padding_mask.view(bsz, 1, 1, src_len)
                 .expand(-1, self.num_heads, -1, -1)
@@ -864,22 +866,22 @@ class VALLE(VALLF):
 
             #print(y.size())
 
-            y_emb = self.ar_audio_embedding(y)
+            # y_emb = self.ar_audio_embedding(y)
 
             # adding language id to audio token embedding
-            language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
+            # language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
 
-            y_emb = y_emb + language_id_exp
+            # y_emb = y_emb + language_id_exp
             #print(y_emb.size())
             #print(y_len)
             #print(src_len)
             #print(language_id.size())
 
 
-            y_emb = self.ar_audio_prenet(y_emb)
-            y_pos = self.ar_audio_position(y_emb)
+            # y_emb = self.ar_audio_prenet(y_emb)
+            # y_pos = self.ar_audio_position(y_emb)
 
-            xy_pos = torch.concat([x, y_pos], dim=1)
+            # xy_pos = torch.concat([x, y_pos], dim=1)
 
             xy_dec, _ = self.ar_decoder(
                 (xy_pos, None),
