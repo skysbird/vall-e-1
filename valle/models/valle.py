@@ -1050,14 +1050,17 @@ class VALLE(VALLF):
             )
 
             if (
-                samples == NUM_AUDIO_TOKENS
+                torch.argmax(logits, dim=-1)[0] == NUM_AUDIO_TOKENS
+                or samples[0, 0] == NUM_AUDIO_TOKENS
+                or (y.shape[1] - prompts.shape[1]) > x_lens.max() * 16
             ):
                 print(f"VALL-E EOS [{prompts.shape[1]} -> {y.shape[1]}]")
                 break
 
             ar_y = torch.concat([ar_y, samples], dim=1)
 
-        codes = [ar_y[:, prefix_len + int(self.ar_audio_prepend_bos) :]]
+        codes = [ar_y[:, int(self.ar_audio_prepend_bos) :]]
+        print(codes)
         if self.num_quantizers == 1:
             return torch.stack(codes, dim=-1)
 
