@@ -765,7 +765,6 @@ class VALLE(VALLF):
         x_lens: torch.Tensor,
         y: Union[torch.Tensor, PromptedFeatures],
         y_lens: Union[torch.Tensor, PromptedFeatures],
-        language_id: torch.Tensor,
         reduction: str = "sum",
         train_stage: int = 0,
         **kwargs,
@@ -789,7 +788,6 @@ class VALLE(VALLF):
         """
         assert x.ndim == 2, x.shape
         assert x_lens.ndim == 1, x_lens.shape
-        #print(y.size())
 
         y_prompts_codes = None
         if isinstance(y, PromptedFeatures):
