@@ -996,13 +996,19 @@ class VALLE(VALLF):
         x = self.ar_text_prenet(x)
         x = self.ar_text_position(x)
 
+        print(y.size())
+        y = torch.zeros(1,0,8).long().to(y.device)
+        print(y.size())
+
         text_len = x_lens.max()
         prompts = y
         prefix_len = y.shape[1]
 
         # AR Decoder
         # TODO: Managing decoder steps avoid repetitive computation
-        y = prompts[..., 0]
+        y = y[..., 0]
+
+
         if self.ar_audio_prepend_bos:
             y = F.pad(y, (1, 0), value=NUM_AUDIO_TOKENS + 1)
 
@@ -1042,15 +1048,8 @@ class VALLE(VALLF):
             )
 
             if (
-                torch.argmax(logits, dim=-1)[0] == NUM_AUDIO_TOKENS
-                or samples[0, 0] == NUM_AUDIO_TOKENS
-                or (y.shape[1] - prompts.shape[1]) > x_lens.max() * 16
+                samples == NUM_AUDIO_TOKENS
             ):
-                if prompts.shape[1] == y.shape[1]:
-                    raise SyntaxError(
-                        "well trained model shouldn't reach here."
-                    )
-
                 print(f"VALL-E EOS [{prompts.shape[1]} -> {y.shape[1]}]")
                 break
 
