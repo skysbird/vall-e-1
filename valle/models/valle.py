@@ -864,7 +864,7 @@ class VALLE(VALLF):
             y_emb = self.ar_audio_prenet(y_emb)
             y_pos = self.ar_audio_position(y_emb)
 
-            xy_pos = torch.concat([x, y_pos], dim=1)
+            xy_pos = torch.concat([x, y_pos, y_pos], dim=1)
 
             xy_dec, _ = self.ar_decoder(
                 (xy_pos, None),
