@@ -819,11 +819,12 @@ class VALLE(VALLF):
 
         xy_padding_mask = torch.concat([x_mask, y_mask], dim=1)
         if self.ar_audio_prepend_bos:
-            ar_xy_padding_mask = torch.concat(
-                [x_mask, F.pad(y_mask, (1, 0), value=False)], dim=1
-            )
+            # ar_xy_padding_mask = torch.concat(
+            #     [x_mask, F.pad(y_mask, (1, 0), value=False)], dim=1
+            # )
+            pass
         else:
-            ar_xy_padding_mask = xy_padding_mask
+            ar_xy_padding_mask = x_mask
         # AR Decoder
         if train_stage in [0, 1]:
             x = self.ar_text_embedding(text)
@@ -837,34 +838,38 @@ class VALLE(VALLF):
                 (0, y_len),
                 value=True,
             )
-            y_attn_mask = F.pad(
-                torch.triu(
-                    torch.ones(y_len, y_len, dtype=torch.bool, device=x.device),
-                    diagonal=1,
-                ),
-                (x_len, 0),
-                value=False,
-            )
-            xy_attn_mask = torch.concat([x_attn_mask, y_attn_mask], dim=0)
+            # y_attn_mask = F.pad(
+            #     torch.triu(
+            #         torch.ones(y_len, y_len, dtype=torch.bool, device=x.device),
+            #         diagonal=1,
+            #     ),
+            #     (x_len, 0),
+            #     value=False,
+            # )
+            # xy_attn_mask = torch.concat([x_attn_mask, y_attn_mask], dim=0)
+
+            xy_attn_mask = x_attn_mask
 
             # merge key padding and attention masks
-            bsz, src_len = x.shape[0], x_len + y_len
+            bsz, src_len = x.shape[0], x_len
             _xy_padding_mask = (
                 ar_xy_padding_mask.view(bsz, 1, 1, src_len)
                 .expand(-1, self.num_heads, -1, -1)
                 .reshape(bsz * self.num_heads, 1, src_len)
             )
+
             xy_attn_mask = xy_attn_mask.logical_or(_xy_padding_mask)
 
             new_attn_mask = torch.zeros_like(xy_attn_mask, dtype=x.dtype)
             new_attn_mask.masked_fill_(xy_attn_mask, float("-inf"))
             xy_attn_mask = new_attn_mask
 
-            y_emb = self.ar_audio_embedding(y)
-            y_emb = self.ar_audio_prenet(y_emb)
-            y_pos = self.ar_audio_position(y_emb)
+            # y_emb = self.ar_audio_embedding(y)
+            # y_emb = self.ar_audio_prenet(y_emb)
+            # y_pos = self.ar_audio_position(y_emb)
 
-            xy_pos = torch.concat([x, y_pos], dim=1)
+            # xy_pos = torch.concat([x, y_pos], dim=1)
+            xy_pos = x
 
             xy_dec, _ = self.ar_decoder(
                 (xy_pos, None),
@@ -872,7 +877,7 @@ class VALLE(VALLF):
                 # src_key_padding_mask=xy_padding_mask,
                 # is_causal=True,
             )
-            logits = self.ar_predict_layer(xy_dec[:, x_len:]).permute(0, 2, 1)
+            logits = self.ar_predict_layer(xy_dec[:, :]).permute(0, 2, 1)
             # loss
             total_loss = F.cross_entropy(logits, targets, reduction=reduction)
 
