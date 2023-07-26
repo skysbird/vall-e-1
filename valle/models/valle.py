@@ -812,6 +812,8 @@ class VALLE(VALLF):
             codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
         )
 
+
+
         x_len = x_lens.max()
 
         metrics = {}
@@ -872,7 +874,11 @@ class VALLE(VALLF):
                 # src_key_padding_mask=xy_padding_mask,
                 # is_causal=True,
             )
-            logits = self.ar_predict_layer(xy_dec[:, x_len:]).permute(0, 2, 1)
+            logits = self.ar_predict_layer(xy_dec[:, :]).permute(0, 2, 1)
+
+            #带上text看看
+            targets = torch.concat([x,targets], dim=1) 
+
             # loss
             total_loss = F.cross_entropy(logits, targets, reduction=reduction)
 
