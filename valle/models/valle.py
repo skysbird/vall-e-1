@@ -790,9 +790,13 @@ class VALLE(VALLF):
         assert x_lens.ndim == 1, x_lens.shape
 
         y_prompts_codes = None
+        p = None
+        p_lens = None
         if isinstance(y, PromptedFeatures):
             y_prompts_codes, y = y.data
+            p = y_prompts_codes
             prompts_len, y_lens = y_lens.data
+            p_lens = prompts_len
             assert prompts_len.min() == prompts_len.max()
             assert self.prefix_mode == 4
             y_prompts_codes = y_prompts_codes.type(torch.int64)
@@ -803,7 +807,9 @@ class VALLE(VALLF):
         # NOTE: x has been padded in TextTokenCollater
         x_mask = make_pad_mask(x_lens).to(x.device)
         y_mask = make_pad_mask(y_lens).to(y.device)
+
         y_mask_int = y_mask.type(torch.int64)
+        p_mask_int = p_mask.type(torch.int64)
 
         text = x
         codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))
@@ -812,15 +818,38 @@ class VALLE(VALLF):
             codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
         )
 
+        p_codes = p.type(torch.int64) *  (1 - p_mask_int.unsqueeze(dim=-1))
+
+        p, _ = self.pad_y_eos(
+            p_codes[..., 0], p_mask_int, eos_id=NUM_AUDIO_TOKENS
+        )
+
+        dt = y.shape[1] - p.shape[1]
+
+        #padding to target
+        if dt > 0:
+            p = F.pad(
+                p,
+                (0, dt),
+                NUM_AUDIO_TOKENS
+            )
+
+        if dt < 0:
+            p = p[:,dt]
+            p[:,-1] = NUM_AUDIO_TOKENS
+
+
+        p_mask = make_pad_mask(p_lens).to(p.device)
+
         x_len = x_lens.max()
 
         metrics = {}
         total_loss = 0.0
 
-        xy_padding_mask = torch.concat([x_mask, y_mask], dim=1)
+        xy_padding_mask = torch.concat([x_mask, p_mask], dim=1)
         if self.ar_audio_prepend_bos:
             ar_xy_padding_mask = torch.concat(
-                [x_mask, F.pad(y_mask, (1, 0), value=False)], dim=1
+                [x_mask, F.pad(p_mask, (1, 0), value=False)], dim=1
             )
         else:
             ar_xy_padding_mask = xy_padding_mask
@@ -830,25 +859,25 @@ class VALLE(VALLF):
             x = self.ar_text_prenet(x)
             x = self.ar_text_position(x)
 
-            y_len = y_lens.max() + int(self.ar_audio_prepend_bos)
+            p_len = p_lens.max() + int(self.ar_audio_prepend_bos)
 
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
                 (0, y_len),
                 value=True,
             )
-            y_attn_mask = F.pad(
+            p_attn_mask = F.pad(
                 torch.triu(
-                    torch.ones(y_len, y_len, dtype=torch.bool, device=x.device),
+                    torch.ones(p_len, p_len, dtype=torch.bool, device=x.device),
                     diagonal=1,
                 ),
                 (x_len, 0),
                 value=False,
             )
-            xy_attn_mask = torch.concat([x_attn_mask, y_attn_mask], dim=0)
+            xy_attn_mask = torch.concat([x_attn_mask, p_attn_mask], dim=0)
 
             # merge key padding and attention masks
-            bsz, src_len = x.shape[0], x_len + y_len
+            bsz, src_len = x.shape[0], x_len + p_len
             _xy_padding_mask = (
                 ar_xy_padding_mask.view(bsz, 1, 1, src_len)
                 .expand(-1, self.num_heads, -1, -1)
@@ -860,11 +889,11 @@ class VALLE(VALLF):
             new_attn_mask.masked_fill_(xy_attn_mask, float("-inf"))
             xy_attn_mask = new_attn_mask
 
-            y_emb = self.ar_audio_embedding(y)
-            y_emb = self.ar_audio_prenet(y_emb)
-            y_pos = self.ar_audio_position(y_emb)
+            p_emb = self.ar_audio_embedding(p)
+            p_emb = self.ar_audio_prenet(p_emb)
+            p_pos = self.ar_audio_position(p_emb)
 
-            xy_pos = torch.concat([x, y_pos], dim=1)
+            xy_pos = torch.concat([x, p_pos], dim=1)
 
             xy_dec, _ = self.ar_decoder(
                 (xy_pos, None),
