@@ -804,13 +804,13 @@ class VALLE(VALLF):
         assert x.ndim == 2, x.shape
         assert x_lens.ndim == 1, x_lens.shape
 
-        y_prompts_codes = None
-        if isinstance(y, PromptedFeatures):
-            y_prompts_codes, y = y.data
-            prompts_len, y_lens = y_lens.data
+        p_prompts_codes = None
+        if isinstance(p, PromptedFeatures):
+            p_prompts_codes, p = p.data
+            prompts_len, p_lens = p_lens.data
             assert prompts_len.min() == prompts_len.max()
             assert self.prefix_mode == 4
-            y_prompts_codes = y_prompts_codes.type(torch.int64)
+            p_prompts_codes = p_prompts_codes.type(torch.int64)
 
         assert y.ndim == 3, y.shape
         assert y_lens.ndim == 1, y_lens.shape
@@ -956,7 +956,7 @@ class VALLE(VALLF):
             x = self.nar_text_position(x)
 
             y_emb, prefix_len = self._prepare_prompts(
-                y, y_lens, codes, nar_stage, y_prompts_codes
+                y, y_lens, codes, nar_stage, p_prompts_codes
             )
 
             y_len = y_lens.max()

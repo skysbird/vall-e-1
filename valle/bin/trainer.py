@@ -521,12 +521,15 @@ def compute_loss(
     audio_features_lens = batch["audio_features_lens"].to(device)
     assert audio_features.ndim == 3
 
+    t_audio_features = batch["t_audio_features"].to(device)
+    t_audio_features_lens = batch["t_audio_features_lens"].to(device)
+
     with torch.set_grad_enabled(is_training):
         predicts, loss, metrics = model(
             x=text_tokens,
             x_lens=text_tokens_lens,
-            y=audio_features,
-            y_lens=audio_features_lens,
+            y=t_audio_features,
+            y_lens=t_audio_features_lens,
             p=audio_features,
             p_lens=audio_features_lens,
             train_stage=params.train_stage,
