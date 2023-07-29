@@ -831,6 +831,14 @@ class VALLE(VALLF):
         )
 
 
+        codes = p.type(torch.int64) * (1 - p_mask_int.unsqueeze(dim=-1))
+
+        p, _ = self.pad_y_eos(
+            codes[..., 0], p_mask_int, eos_id=NUM_AUDIO_TOKENS
+        )
+
+
+
         x_len = x_lens.max()
 
         metrics = {}
@@ -907,7 +915,12 @@ class VALLE(VALLF):
             y_emb = self.ar_audio_prenet(y_emb)
             y_pos = self.ar_audio_position(y_emb)
 
-            xy_pos = torch.concat([x, y_pos], dim=1)
+            p_emb = self.ar_audio_embedding(p)
+            p_emb = self.ar_audio_prenet(p_emb)
+            p_pos = self.ar_audio_position(p_emb)
+
+
+            xy_pos = torch.concat([x, p_pos, y_pos], dim=1)
 
             xy_dec, _ = self.ar_decoder(
                 (xy_pos, None),
