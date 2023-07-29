@@ -831,10 +831,10 @@ class VALLE(VALLF):
         )
 
 
-        codes = p.type(torch.int64) * (1 - p_mask_int.unsqueeze(dim=-1))
+        codes2 = p.type(torch.int64) * (1 - p_mask_int.unsqueeze(dim=-1))
 
-        p, _ = self.pad_y_eos(
-            codes[..., 0], p_mask_int, eos_id=NUM_AUDIO_TOKENS
+        p, ptargets = self.pad_y_eos(
+            codes2[..., 0], p_mask_int, eos_id=NUM_AUDIO_TOKENS
         )
 
 
@@ -1054,7 +1054,7 @@ class VALLE(VALLF):
         x = self.ar_text_position(x)
 
         print(y.size())
-        #ar_y = torch.zeros(1,0,8).long().to(y.device)
+        t = torch.zeros(1,0,8).long().to(y.device)
         print(y.size())
 
         text_len = x_lens.max()
@@ -1064,12 +1064,12 @@ class VALLE(VALLF):
         # AR Decoder
         # TODO: Managing decoder steps avoid repetitive computation
         y = prompts[..., 0]
-        #ar_y = ar_y[...,0]
+        t = t[...,0]
 
 
         if self.ar_audio_prepend_bos:
             y = F.pad(y, (1, 0), value=NUM_AUDIO_TOKENS + 1)
-            #ar_y = F.pad(ar_y, (1, 0), value=NUM_AUDIO_TOKENS + 1)
+            t = F.pad(t, (1, 0), value=NUM_AUDIO_TOKENS + 1)
 
         x_len = x_lens.max()
         x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool)
@@ -1078,12 +1078,19 @@ class VALLE(VALLF):
             y_emb = self.ar_audio_embedding(y)
             y_emb = self.ar_audio_prenet(y_emb)
             y_pos = self.ar_audio_position(y_emb)
-            xy_pos = torch.concat([x, y_pos], dim=1)
+
+            t_emb = self.ar_audio_embedding(t)
+            t_emb = self.ar_audio_prenet(t_emb)
+            t_pos = self.ar_audio_position(t_emb)
+
+            xy_pos = torch.concat([x, y_pos, t_pos], dim=1)
 
             y_len = y.shape[1]
+            t_len = t.shape[1]
+
             x_attn_mask_pad = F.pad(
                 x_attn_mask,
-                (0, y_len),
+                (0, y_len+t_len),
                 value=True,
             )
             y_attn_mask = F.pad(
@@ -1093,8 +1100,26 @@ class VALLE(VALLF):
                 (x_len, 0),
                 value=False,
             )
+
+            y_attn_mask = F.pad(
+                y_attn_mask,
+                (0, t_len),
+                value=True,
+            )
+
+
+            t_attn_mask = F.pad(
+                torch.triu(
+                    torch.ones(t_len, t_len, dtype=torch.bool, device=x.device),
+                    diagonal=1,
+                ),
+                (x_len+y_len, 0),
+                value=False,
+            )
+
+        
             xy_attn_mask = torch.concat(
-                [x_attn_mask_pad, y_attn_mask], dim=0
+                [x_attn_mask_pad,  y_attn_mask, t_attn_mask], dim=0
             ).to(y.device)
 
             xy_dec, _ = self.ar_decoder(
@@ -1114,9 +1139,9 @@ class VALLE(VALLF):
                 print(f"VALL-E EOS [{prompts.shape[1]} -> {y.shape[1]}]")
                 break
 
-            y = torch.concat([y, samples], dim=1)
+            t = torch.concat([t, samples], dim=1)
 
-        codes = [y[:, prefix_len+int(self.ar_audio_prepend_bos) :]]
+        codes = [t[:, int(self.ar_audio_prepend_bos) :]]
         print(codes)
         if self.num_quantizers == 1:
             return torch.stack(codes, dim=-1)
