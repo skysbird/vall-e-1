@@ -778,6 +778,8 @@ class VALLE(VALLF):
         x_lens: torch.Tensor,
         y: Union[torch.Tensor, PromptedFeatures],
         y_lens: Union[torch.Tensor, PromptedFeatures],
+        p: Union[torch.Tensor, PromptedFeatures],
+        p_lens: Union[torch.Tensor, PromptedFeatures],
         reduction: str = "sum",
         train_stage: int = 0,
         **kwargs,
@@ -816,7 +818,10 @@ class VALLE(VALLF):
         # NOTE: x has been padded in TextTokenCollater
         x_mask = make_pad_mask(x_lens).to(x.device)
         y_mask = make_pad_mask(y_lens).to(y.device)
+        p_mask = make_pad_mask(p_lens).to(p.device)
+
         y_mask_int = y_mask.type(torch.int64)
+        p_mask_int = p_mask.type(torch.int64)
 
         text = x
         codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))
@@ -826,23 +831,19 @@ class VALLE(VALLF):
         )
 
 
-        targets = self.make_xy_target(
-            codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS,text = text
-        )
-
-
         x_len = x_lens.max()
 
         metrics = {}
         total_loss = 0.0
 
-        xy_padding_mask = torch.concat([x_mask, y_mask], dim=1)
+        xy_padding_mask = torch.concat([x_mask, p_mask, y_mask], dim=1)
         if self.ar_audio_prepend_bos:
             ar_xy_padding_mask = torch.concat(
                 [x_mask, F.pad(y_mask, (1, 0), value=False)], dim=1
             )
         else:
             ar_xy_padding_mask = xy_padding_mask
+            
         # AR Decoder
         if train_stage in [0, 1]:
             x = self.ar_text_embedding(text)
@@ -851,33 +852,56 @@ class VALLE(VALLF):
 
             y_len = y_lens.max() + int(self.ar_audio_prepend_bos)
 
+            p_len = p_lens.max()
+
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
-                (0, y_len),
+                (0, y_len+p_len),
                 value=True,
             )
+
             y_attn_mask = F.pad(
                 torch.triu(
                     torch.ones(y_len, y_len, dtype=torch.bool, device=x.device),
                     diagonal=1,
                 ),
+                (x_len+p_len, 0),
+                value=False,
+            )
+
+
+            p_attn_mask = F.pad(
+                torch.triu(
+                    torch.ones(p_len, p_len, dtype=torch.bool, device=x.device),
+                    diagonal=1,
+                ),
                 (x_len, 0),
                 value=False,
             )
-            xy_attn_mask = torch.concat([x_attn_mask, y_attn_mask], dim=0)
+
+            p_attn_mask = F.pad(
+                p_attn_mask,
+                (0, y_len),
+                value=True,
+            )
+
+
+            xpy_attn_mask = torch.concat([x_attn_mask, p_attn_mask, y_attn_mask], dim=0)
+
+            
 
             # merge key padding and attention masks
-            bsz, src_len = x.shape[0], x_len + y_len
+            bsz, src_len = x.shape[0], x_len + p_len + y_len
             _xy_padding_mask = (
                 ar_xy_padding_mask.view(bsz, 1, 1, src_len)
                 .expand(-1, self.num_heads, -1, -1)
                 .reshape(bsz * self.num_heads, 1, src_len)
             )
-            xy_attn_mask = xy_attn_mask.logical_or(_xy_padding_mask)
+            xpy_attn_mask = xpy_attn_mask.logical_or(_xy_padding_mask)
 
-            new_attn_mask = torch.zeros_like(xy_attn_mask, dtype=x.dtype)
-            new_attn_mask.masked_fill_(xy_attn_mask, float("-inf"))
-            xy_attn_mask = new_attn_mask
+            new_attn_mask = torch.zeros_like(xpy_attn_mask, dtype=x.dtype)
+            new_attn_mask.masked_fill_(xpy_attn_mask, float("-inf"))
+            xpy_attn_mask = new_attn_mask
 
             y_emb = self.ar_audio_embedding(y)
             y_emb = self.ar_audio_prenet(y_emb)
@@ -887,12 +911,12 @@ class VALLE(VALLF):
 
             xy_dec, _ = self.ar_decoder(
                 (xy_pos, None),
-                mask=xy_attn_mask,
+                mask=xpy_attn_mask,
                 # src_key_padding_mask=xy_padding_mask,
                 # is_causal=True,
             )
 
-            logits = self.ar_predict_layer(xy_dec[:, :]).permute(0, 2, 1)
+            logits = self.ar_predict_layer(xy_dec[:, x_len+p_len:]).permute(0, 2, 1)
             # loss
             total_loss = F.cross_entropy(logits, targets, reduction=reduction)
 

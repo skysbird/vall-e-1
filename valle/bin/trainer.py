@@ -527,6 +527,8 @@ def compute_loss(
             x_lens=text_tokens_lens,
             y=audio_features,
             y_lens=audio_features_lens,
+            p=audio_features,
+            p_len=audio_features_lens,
             train_stage=params.train_stage,
         )
 
