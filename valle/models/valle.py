@@ -772,6 +772,13 @@ class VALLE(VALLF):
             **kwargs,
         )
 
+
+    def _create_mask(self,l, device):
+        """1 is valid region and 0 is invalid."""
+        seq = torch.arange(max(l), device=device).unsqueeze(0)  # (1 t)
+        stop = torch.tensor(l, device=device).unsqueeze(1)  # (b 1)
+        return (seq < stop).float()  # (b t)
+
     def forward(
         self,
         x: torch.Tensor,
@@ -811,6 +818,9 @@ class VALLE(VALLF):
             assert prompts_len.min() == prompts_len.max()
             assert self.prefix_mode == 4
             p_prompts_codes = p_prompts_codes.type(torch.int64)
+            #use prompts want to see beg you
+            p = p_prompts_codes
+            p_lens = prompts_len
 
         assert y.ndim == 3, y.shape
         assert y_lens.ndim == 1, y_lens.shape
@@ -838,6 +848,9 @@ class VALLE(VALLF):
         )
 
 
+        #print("y",y)
+        #print("t",targets)
+        #print("p",p)
 
         x_len = x_lens.max()
 
@@ -921,6 +934,7 @@ class VALLE(VALLF):
 
 
             xy_pos = torch.concat([x, p_pos, y_pos], dim=1)
+
 
             xy_dec, _ = self.ar_decoder(
                 (xy_pos, None),
@@ -1072,7 +1086,7 @@ class VALLE(VALLF):
             t = F.pad(t, (1, 0), value=NUM_AUDIO_TOKENS + 1)
 
         x_len = x_lens.max()
-        x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool)
+        x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool,device=x.device)
 
         while True:
             y_emb = self.ar_audio_embedding(y)
@@ -1095,7 +1109,7 @@ class VALLE(VALLF):
             )
             y_attn_mask = F.pad(
                 torch.triu(
-                    torch.ones(y_len, y_len, dtype=torch.bool), diagonal=1
+                    torch.ones(y_len, y_len, dtype=torch.bool,device=x.device), diagonal=1
                 ),
                 (x_len, 0),
                 value=False,
@@ -1136,14 +1150,14 @@ class VALLE(VALLF):
                 or samples[0, 0] == NUM_AUDIO_TOKENS
                 or (y.shape[1] - prompts.shape[1]) > x_lens.max() * 16
             ):
-                print(f"VALL-E EOS [{prompts.shape[1]} -> {y.shape[1]}]")
+                print(f"VALL-E EOS [{prompts.shape[1]} -> {t.shape[1]}]")
                 break
 
             t = torch.concat([t, samples], dim=1)
 
         codes = [t[:, int(self.ar_audio_prepend_bos) :]]
         print(codes)
-        if self.num_quantizers == 1:
+        if True or self.num_quantizers == 1:
             return torch.stack(codes, dim=-1)
 
         # Non-AR Decoders

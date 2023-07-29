@@ -130,7 +130,7 @@ def main():
     text_collater = get_text_token_collater(args.text_tokens)
     audio_tokenizer = AudioTokenizer()
 
-    torch.manual_seed(3407)
+#    torch.manual_seed(3407)
 
     device = torch.device("cpu")
     if torch.cuda.is_available():
