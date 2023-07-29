@@ -35,6 +35,9 @@ class PromptedFeatures:
         return (self.prompts, self.features)
 
 
+def create_int_defaultdict():
+    return []
+
 class PromptedPrecomputedFeatures(PrecomputedFeatures):
     """
     :class:`InputStrategy` that reads pre-computed features, whose manifests
@@ -56,9 +59,9 @@ class PromptedPrecomputedFeatures(PrecomputedFeatures):
             num_workers, executor_type
         )
 
-        self.utt2neighbors = defaultdict(lambda: [])
+        self.utt2neighbors = defaultdict(create_int_defaultdict)
 
-        if dataset.lower() == "libritts":
+        if dataset.lower() in ("libritts",'aishell'):
             # 909_131041_000013_000002
             # 909_131041_000013_000003
             speaker2utts = defaultdict(lambda: [])

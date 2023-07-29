@@ -120,3 +120,12 @@ def get_text_token_collater(text_tokens_file: str) -> TextTokenCollater:
         unique_tokens.symbols, add_bos=True, add_eos=True
     )
     return collater
+
+
+def get_text_token_collater_no(text_tokens_file: str) -> TextTokenCollater:
+    text_tokens_path = Path(text_tokens_file)
+    unique_tokens = SymbolTable.from_file(text_tokens_path)
+    collater = TextTokenCollater(
+        unique_tokens.symbols, add_bos=False, add_eos=False
+    )
+    return collater

@@ -130,6 +130,8 @@ def main():
     text_collater = get_text_token_collater(args.text_tokens)
     audio_tokenizer = AudioTokenizer()
 
+    torch.manual_seed(3407)
+
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda", 0)
@@ -215,7 +217,7 @@ def main():
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    text_tokenizer, text=f"{text_prompts} {text}".strip()
+                    text_tokenizer, text=f"{text}".strip()
                 )
             ]
         )
