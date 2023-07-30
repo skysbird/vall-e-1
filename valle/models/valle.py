@@ -807,6 +807,7 @@ class VALLE(VALLF):
         # NOTE: x has been padded in TextTokenCollater
         x_mask = make_pad_mask(x_lens).to(x.device)
         y_mask = make_pad_mask(y_lens).to(y.device)
+        p_mask = make_pad_mask(p_lens).to(p.device)
 
         y_mask_int = y_mask.type(torch.int64)
         p_mask_int = p_mask.type(torch.int64)
@@ -831,22 +832,23 @@ class VALLE(VALLF):
             p = F.pad(
                 p,
                 (0, dt),
-                NUM_AUDIO_TOKENS
+                value=NUM_AUDIO_TOKENS
             )
+
 
         if dt < 0:
             p = p[:,dt]
             p[:,-1] = NUM_AUDIO_TOKENS
 
 
-        p_mask = make_pad_mask(p_lens).to(p.device)
 
         x_len = x_lens.max()
 
         metrics = {}
         total_loss = 0.0
 
-        xy_padding_mask = torch.concat([x_mask, p_mask], dim=1)
+        #XXX 
+        xy_padding_mask = torch.concat([x_mask, y_mask], dim=1)
         if self.ar_audio_prepend_bos:
             ar_xy_padding_mask = torch.concat(
                 [x_mask, F.pad(p_mask, (1, 0), value=False)], dim=1
@@ -860,12 +862,21 @@ class VALLE(VALLF):
             x = self.ar_text_position(x)
 
             p_len = p_lens.max() + int(self.ar_audio_prepend_bos)
+            y_len = y_lens.max() + int(self.ar_audio_prepend_bos)
+            #print("p",p_len)
+            #print("y",y_len)
+
+            #XXX for test
+            p_len = y_len 
+
 
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
-                (0, y_len),
+                (0, p_len),
                 value=True,
             )
+
+
             p_attn_mask = F.pad(
                 torch.triu(
                     torch.ones(p_len, p_len, dtype=torch.bool, device=x.device),
