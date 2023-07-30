@@ -828,6 +828,8 @@ class VALLE(VALLF):
         dt = y.shape[1] - p.shape[1]
 
         #padding to target
+        #also mask padding to target
+
         if dt > 0:
             p = F.pad(
                 p,
@@ -835,10 +837,21 @@ class VALLE(VALLF):
                 value=NUM_AUDIO_TOKENS
             )
 
+            p_mask = F.pad(
+                p_mask,
+                (0,dt),
+                value = True
+            )
+
+
 
         if dt < 0:
             p = p[:,dt]
             p[:,-1] = NUM_AUDIO_TOKENS
+
+            p_mask = p_mask[:,dt]
+
+
 
 
 
@@ -847,8 +860,8 @@ class VALLE(VALLF):
         metrics = {}
         total_loss = 0.0
 
-        #XXX 
-        xy_padding_mask = torch.concat([x_mask, y_mask], dim=1)
+        
+        xy_padding_mask = torch.concat([x_mask, p_mask], dim=1)
         if self.ar_audio_prepend_bos:
             ar_xy_padding_mask = torch.concat(
                 [x_mask, F.pad(p_mask, (1, 0), value=False)], dim=1
