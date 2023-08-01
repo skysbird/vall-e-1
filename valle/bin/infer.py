@@ -144,6 +144,7 @@ def main():
     audio_tokenizer = AudioTokenizer()
     language_id = [args.lang] #must []
     print(f"lang={language_id}")
+    torch.manual_seed(3407)
 
 #    torch.manual_seed(3407)
 

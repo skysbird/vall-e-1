@@ -19,8 +19,6 @@ from aliyunsdkalimt.request.v20181012 import TranslateGeneralRequest
 app = Flask(__name__)
 
 
-app.config['UPLOAD_FOLDER'] = 'tmp'
-
 import threading
 
 class TestSr:
@@ -372,7 +370,7 @@ def infer(prompt_text,prompt_wav,target_text,output,top_k=-100,t=1.0):
     args.num_decoder_layers = 12
     args.scale_factor = 1
     args.prefix_mode = 1
-    args.prepend_bos = True
+    args.prepend_bos = False
     args.num_quantizers = 8
     args.scaling_xformers = False
     args.top_k = top_k

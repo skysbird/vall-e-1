@@ -125,6 +125,11 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
         ${audio_feats_dir}/aishell_cuts_dev.jsonl.gz \
         ${audio_feats_dir}/cuts_dev_others.jsonl.gz
 
+    lhotse subset --last 50000 \
+        ${audio_feats_dir}/wenet_cuts_train_m.jsonl.gz \
+        ${audio_feats_dir}/wenet_cuts_train_50000.jsonl.gz
+
+
     ## train
     #lhotse combine \
     #    ${audio_feats_dir}/cuts_dev_others.jsonl.gz \
@@ -138,11 +143,13 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
         ${audio_feats_dir}/libritts_cuts_train-clean-360.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_train-other-500.jsonl.gz \
         ${audio_feats_dir}/cuts_dev_others.jsonl.gz \
+        ${audio_feats_dir}/wenet_cuts_train_50000.jsonl.gz \
         ${audio_feats_dir}/aishell_cuts_train.jsonl.gz \
         ${audio_feats_dir}/cuts_train.jsonl.gz
 
       # dev
       lhotse combine \
+        ${audio_feats_dir}/wenet_cuts_dev.jsonl.gz \
         ${audio_feats_dir}/cuts_dev_400.jsonl.gz \
         ${audio_feats_dir}/libritts_cuts_dev-clean.jsonl.gz \
         ${audio_feats_dir}/cuts_dev.jsonl.gz
