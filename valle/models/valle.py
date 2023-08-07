@@ -791,8 +791,6 @@ class VALLE(VALLF):
         x_lens: torch.Tensor,
         y: Union[torch.Tensor, PromptedFeatures],
         y_lens: Union[torch.Tensor, PromptedFeatures],
-        p: Union[torch.Tensor, PromptedFeatures],
-        p_lens: Union[torch.Tensor, PromptedFeatures],
         language_id: torch.Tensor,
         reduction: str = "sum",
         train_stage: int = 0,
