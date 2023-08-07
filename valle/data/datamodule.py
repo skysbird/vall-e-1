@@ -36,7 +36,7 @@ from lhotse.dataset.input_strategies import OnTheFlyFeatures
 from lhotse.utils import fix_random_seed
 from torch.utils.data import DataLoader,BatchSampler
 
-from valle.data.collation import get_text_token_collater
+from valle.data.collation import get_text_token_collater as get_text_token_collater
 from valle.data.dataset import SpeechSynthesisDataset
 from valle.data.fbank import get_fbank_extractor
 from valle.data.input_strategies import PromptedPrecomputedFeatures
@@ -375,7 +375,6 @@ class TtsDataModule:
             cuts_valid,
             max_duration=self.args.max_duration,
             shuffle=False,
-            drop_last=True,
         )
         logging.info("About to create dev dataloader")
         valid_dl = DataLoader(
@@ -403,7 +402,6 @@ class TtsDataModule:
             cuts,
             max_duration=self.args.max_duration,
             shuffle=False,
-            drop_last=True,
         )
         logging.debug("About to create test dataloader")
         test_dl = DataLoader(

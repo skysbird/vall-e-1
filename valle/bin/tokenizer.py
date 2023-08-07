@@ -233,12 +233,17 @@ def main():
                                 text_tokenizer, text=c.supervisions[0].text
                             )
                             c.supervisions[0].custom = {}
-                        else:
+                        elif args.prefix == "wenet":
                             assert args.prefix == "wenet"
                             phonemes = tokenize_text(
                                 text_tokenizer, text=c.supervisions[0].text
                             )
                             c.supervisions[0].custom = {}
+                        else:
+                            assert args.prefix == "libritts"
+                            phonemes = tokenize_text(
+                                text_tokenizer, text=c.supervisions[0].text
+                            )
                         c.supervisions[0].custom["tokens"] = {"text": phonemes}
                         unique_symbols.update(phonemes)
 

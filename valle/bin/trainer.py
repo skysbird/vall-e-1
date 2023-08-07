@@ -512,7 +512,6 @@ def compute_loss(
         if isinstance(model, DDP)
         else next(model.parameters()).device
     )
-    #print(batch)
     # at entry, TextTokens is (N, P)
     text_tokens = batch["text_tokens"].to(device)
     text_tokens_lens = batch["text_tokens_lens"].to(device)
@@ -524,15 +523,18 @@ def compute_loss(
 
     #here language_id is []
     language_id = batch["language"].to(device)
+    t_audio_features = batch["t_audio_features"].to(device)
+    t_audio_features_lens = batch["t_audio_features_lens"].to(device)
 
     #logging.info(f"language id={batch['text']}")
     with torch.set_grad_enabled(is_training):
         predicts, loss, metrics = model(
             x=text_tokens,
             x_lens=text_tokens_lens,
-            y=audio_features,
-            y_lens=audio_features_lens,
-            language_id=language_id,
+            y=t_audio_features,
+            y_lens=t_audio_features_lens,
+            p=audio_features,
+            p_lens=audio_features_lens,
             train_stage=params.train_stage,
         )
 
@@ -571,8 +573,7 @@ def compute_validation_loss(
         )
         assert loss.requires_grad is False
         tot_loss = tot_loss + loss_info
-    if world_size > 1:
-        tot_loss.reduce(loss.device)
+
     loss_value = tot_loss["loss"] / tot_loss["frames"]
     if loss_value < params.best_valid_loss:
         params.best_valid_epoch = params.cur_epoch
@@ -583,10 +584,7 @@ def compute_validation_loss(
             f"{params.exp_dir}/eval/step-{params.batch_idx_train:06d}"
         )
         output_dir.mkdir(parents=True, exist_ok=True)
-        if isinstance(model, DDP):
-            model.module.visualize(predicts, batch, output_dir=output_dir)
-        else:
-            model.visualize(predicts, batch, output_dir=output_dir)
+        model.visualize(predicts, batch, output_dir=output_dir)
 
     return tot_loss
 
@@ -718,7 +716,10 @@ def train_one_epoch(
                         model_cur=model,
                         model_avg=model_avg,
                     )
-             
+                if world_size > 1:
+                    # Block other ranks until first process completes
+                    torch.distributed.barrier()
+
         if (
             params.batch_idx_train > 0
             and params.batch_idx_train % params.save_every_n == 0
@@ -742,7 +743,10 @@ def train_one_epoch(
                     topk=params.keep_last_k,
                     rank=rank,
                 )
-         
+            if world_size > 1:
+                # Block other ranks until first process completes
+                torch.distributed.barrier()
+
         if batch_idx % 100 == 0 and params.dtype in ["float16", "fp16"]:
             # If the grad scale was less than 1, try increasing it.    The _growth_interval
             # of the grad scaler is configurable, but we can't configure it to have different
@@ -806,26 +810,31 @@ def train_one_epoch(
         if params.batch_idx_train % params.valid_interval == 0:
             # Calculate validation loss in Rank 0
             model.eval()
-            logging.info("Computing validation loss")
-            with torch.cuda.amp.autocast(dtype=dtype):
-                valid_info = compute_validation_loss(
-                    params=params,
-                    model=model,
-                    valid_dl=valid_dl,
-                    world_size=world_size,
+            if rank == 0:
+                logging.info("Computing validation loss")
+                with torch.cuda.amp.autocast(dtype=dtype):
+                    valid_info = compute_validation_loss(
+                        params=params,
+                        model=model,
+                        valid_dl=valid_dl,
+                        world_size=world_size,
+                    )
+                logging.info(
+                    f"Epoch {params.cur_epoch}, validation: {valid_info}"
                 )
-            logging.info(
-                f"Epoch {params.cur_epoch}, validation: {valid_info}"
-            )
-            logging.info(
-                f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB"
-            )
-
-            if tb_writer is not None:
-                valid_info.write_summary(
-                    tb_writer, "train/valid_", params.batch_idx_train
+                logging.info(
+                    f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB"
                 )
 
+                if tb_writer is not None:
+                    valid_info.write_summary(
+                        tb_writer, "train/valid_", params.batch_idx_train
+                    )
+            if world_size > 1:
+                # Block other ranks until first process completes
+                logging.info("Waiting for validation loss to be computed")
+                torch.distributed.barrier()
+                logging.info("Resuming from wait state")
             model.train()
 
     loss_value = tot_loss["loss"] / tot_loss["frames"]
@@ -1019,30 +1028,10 @@ def run(rank, world_size, args):
     )
     valid_dl = dataset.valid_dataloaders(valid_cuts)
 
-
-
-    #pair language dl
-    #dataset_p = TtsDataModule(args)
-    #train_cuts_p = dataset_p.train_cuts()
-    #valid_cuts_p = dataset_p.dev_cuts()
-
-    #train_cuts_p = filter_short_and_long_utterances(
-    #    train_cuts_p, params.filter_min_duration, params.filter_max_duration
-    #)
-    #valid_cuts_p = filter_short_and_long_utterances(
-    #    valid_cuts_p, params.filter_min_duration, params.filter_max_duration
-    #)
-
-    #train_dl_p = dataset.train_dataloaders(
-    #    train_cuts_p, sampler_state_dict=sampler_state_dict
-    #)
-    #valid_dl_p = dataset.valid_dataloaders(valid_cuts_p)
-
-
     if params.oom_check:
         scan_pessimistic_batches_for_oom(
             model=model,
-            train_dl=train_dl, 
+            train_dl=train_dl,
             optimizer=optimizer,
             params=params,
         )
@@ -1097,8 +1086,6 @@ def run(rank, world_size, args):
     if world_size > 1:
         torch.distributed.barrier()
         cleanup_dist()
-
-
 
 
 def display_and_save_batch(

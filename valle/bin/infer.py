@@ -145,6 +145,8 @@ def main():
     language_id = [args.lang] #must []
     print(f"lang={language_id}")
 
+#    torch.manual_seed(3407)
+
     device = torch.device("cpu")
     if torch.cuda.is_available():
         device = torch.device("cuda", 0)
@@ -195,7 +197,7 @@ def main():
         text_tokens, text_tokens_lens = text_collater(
             [
                 tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts} "
+                    text_tokenizer, text=f"{text}".strip()
                 )
             ]
         )
@@ -206,28 +208,15 @@ def main():
 
         print(a)
 
-        ttext_tokens, ttext_tokens_lens = text_collater(
-             [
-                 tokenize_text(
-                    text_tokenizer, text=f"{text}".strip()
-                 )
-             ]
-         )
-
-        a = tokenize_text(
-                    text_tokenizer, text=f"{text}".strip()
-                 )
-
-        print(a)
-
+        
 
 
         #print(text_tokens.size())
         #print(ttext_tokens.size())
 
-        all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
-        #print(all_text_tokens.size())
-        all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
+        # all_text_tokens = torch.concat((text_tokens,ttext_tokens),1)
+        # #print(all_text_tokens.size())
+        # all_text_tokens_lens = text_tokens_lens + ttext_tokens_lens 
         #print(text_tokens_lens)
         #print(ttext_tokens_lens)
         #print(all_text_tokens_lens)
@@ -251,8 +240,8 @@ def main():
                     ]
                 )
             encoded_frames = model.inference(
-                all_text_tokens.to(device),
-                all_text_tokens_lens.to(device),
+                text_tokens.to(device),
+                text_tokens_lens.to(device),
                 audio_prompts,
                 enroll_x_lens=enroll_x_lens,
                 language_id=torch.IntTensor(language_id).to(device),
