@@ -99,6 +99,9 @@ class SpeechSynthesisDataset(torch.utils.data.Dataset):
             [cut.supervisions[0].custom["tokens"]["text"] for cut in cuts]
         )
 
+        language_id = [LAN_ID_DICT[cut.supervisions[0].language] for cut in cuts]
+
+
         return {
             "utt_id": [cut.id for cut in cuts],
             "text": [cut.supervisions[0].text for cut in cuts],
@@ -109,7 +112,9 @@ class SpeechSynthesisDataset(torch.utils.data.Dataset):
             "text_tokens": text_tokens,
             "text_tokens_lens": text_tokens_lens,
             "t_audio_features": target_audio_features,
-            "t_audio_features_lens":target_audio_features_lens
+            "t_audio_features_lens":target_audio_features_lens,
+            "language": torch.IntTensor(language_id)
+
         }
 
 
