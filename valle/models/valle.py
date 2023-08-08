@@ -817,14 +817,12 @@ class VALLE(VALLF):
         assert x_lens.ndim == 1, x_lens.shape
 
         p_prompts_codes = None
-        if isinstance(p, PromptedFeatures):
-            p_prompts_codes, p = p.data
-            prompts_len, p_lens = p_lens.data
+        if isinstance(y, PromptedFeatures):
+            y_prompts_codes, y = y.data
+            prompts_len, y_lens = y_lens.data
             assert prompts_len.min() == prompts_len.max()
             assert self.prefix_mode == 4
-            p_prompts_codes = p_prompts_codes.type(torch.int64)
-            #use prompts want to see beg you
-            p = p_prompts_codes
+            y_prompts_codes = y_prompts_codes.type(torch.int64)
             p_lens = prompts_len
 
         assert y.ndim == 3, y.shape
