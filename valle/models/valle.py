@@ -937,7 +937,16 @@ class VALLE(VALLF):
             p_emb = self.ar_audio_prenet(p_emb)
             p_pos = self.ar_audio_position(p_emb)
 
-            y_emb = y_emb + language_id_exp
+
+            language_id_exp = self.lang_embedding(language_id)
+            #language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
+
+            #print(y_emb.size())
+            #print(language_id_exp.size())
+            y_emb = y_emb + language_id_exp.unsqueeze(1).expand(-1,y_len,-1)
+            p_emb = p_emb + language_id_exp.unsqueeze(1).expand(-1,p_len,-1)
+
+            # y_emb = y_emb + language_id_exp
             #print(y_emb.size())
             #print(y_len)
             #print(src_len)

@@ -533,9 +533,8 @@ def compute_loss(
             x_lens=text_tokens_lens,
             y=t_audio_features,
             y_lens=t_audio_features_lens,
-            p=audio_features,
-            p_lens=audio_features_lens,
             train_stage=params.train_stage,
+            language_id = language_id
         )
 
     assert loss.requires_grad == is_training
