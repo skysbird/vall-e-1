@@ -6,7 +6,7 @@ set -eou pipefail
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
 nj=16
-stage=-1
+stage=2
 stop_stage=3
 
 # We assume dl_dir (download dir) contains the following

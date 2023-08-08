@@ -350,7 +350,7 @@ def main():
             unique_phonemes.add(s)
         logging.info(f"{len(unique_symbols)} unique phonemes: {unique_symbols}")
 
-        unique_phonemes_file = f"{args.output_dir}/unique_text_tokens.k2symbols"
+        unique_phonemes_file = f"{args.output_dir}/unique_text_tokens.k2symbols-aishell-libritts"
         unique_phonemes.to_file(unique_phonemes_file)
 
 
