@@ -523,16 +523,16 @@ def compute_loss(
 
     #here language_id is []
     language_id = batch["language"].to(device)
-    t_audio_features = batch["t_audio_features"].to(device)
-    t_audio_features_lens = batch["t_audio_features_lens"].to(device)
+    #t_audio_features = batch["t_audio_features"].to(device)
+    #t_audio_features_lens = batch["t_audio_features_lens"].to(device)
 
     #logging.info(f"language id={batch['text']}")
     with torch.set_grad_enabled(is_training):
         predicts, loss, metrics = model(
             x=text_tokens,
             x_lens=text_tokens_lens,
-            y=t_audio_features,
-            y_lens=t_audio_features_lens,
+            y=audio_features,
+            y_lens=audio_features_lens,
             train_stage=params.train_stage,
             language_id = language_id
         )

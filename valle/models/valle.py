@@ -817,13 +817,16 @@ class VALLE(VALLF):
         assert x_lens.ndim == 1, x_lens.shape
 
         p_prompts_codes = None
+        p_lens = None
+
         if isinstance(y, PromptedFeatures):
             y_prompts_codes, y = y.data
             prompts_len, y_lens = y_lens.data
             assert prompts_len.min() == prompts_len.max()
             assert self.prefix_mode == 4
-            y_prompts_codes = y_prompts_codes.type(torch.int64)
+            p_prompts_codes = y_prompts_codes.type(torch.int64)
             p_lens = prompts_len
+            p = p_prompts_codes
 
         assert y.ndim == 3, y.shape
         assert y_lens.ndim == 1, y_lens.shape
@@ -1107,11 +1110,12 @@ class VALLE(VALLF):
             t = F.pad(t, (1, 0), value=NUM_AUDIO_TOKENS + 1)
 
         x_len = x_lens.max()
-        x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool)
+        x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device)
 
         while True:
             y_emb = self.ar_audio_embedding(y)
             y_len = y.shape[1]
+            t_len = t.shape[1]
             # adding language id to audio token embedding
             #print(y_emb.size())
             #print(language_id.size())
@@ -1187,12 +1191,8 @@ class VALLE(VALLF):
                 or samples[0, 0] == NUM_AUDIO_TOKENS
                 or (y.shape[1] - prompts.shape[1]) > x_lens.max() * 16
             ):
-                if prompts.shape[1] == y.shape[1]:
-                    raise SyntaxError(
-                        "well trained model shouldn't reach here."
-                    )
 
-                print(f"VALL-E EOS [{prompts.shape[1]} -> {y.shape[1]}]")
+                print(f"VALL-E EOS [{prompts.shape[1]} -> {t.shape[1]}]")
                 break
 
             t = torch.concat([t, samples], dim=1)
