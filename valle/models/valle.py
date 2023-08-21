@@ -835,6 +835,8 @@ class VALLE(VALLF):
         assert y.ndim == 3, y.shape
         assert y_lens.ndim == 1, y_lens.shape
 
+        p_lens = y_lens
+
         # NOTE: x has been padded in TextTokenCollater
         x_mask = make_pad_mask(x_lens).to(x.device)
         y_mask = make_pad_mask(y_lens).to(y.device)
@@ -845,6 +847,9 @@ class VALLE(VALLF):
 
         text = x
         codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))
+
+        #test
+        p_prompts_codes = codes
 
         y, targets = self.pad_y_eos(
             codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
