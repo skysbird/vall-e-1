@@ -33,7 +33,7 @@ from valle.modules.transformer import (
 
 from .macros import NUM_AUDIO_TOKENS, NUM_TEXT_TOKENS
 from .visualizer import visualize
-from data.dataset import LAN_ID_DICT
+from ..data.dataset import LAN_ID_DICT
 
 class Transpose(nn.Identity):
     """(N, T, D) -> (N, D, T)"""
@@ -404,6 +404,21 @@ class VALLF(nn.Module):
 
         return y_emb, prefix_len
 
+    #y, y_lens, codes, nar_stage, p_prompts_codes
+
+    def ar_prompt(self,y, y_lens):
+
+        # prefix at begining
+        int_low = (0.25 * y_lens.min()).type(torch.int64).item()
+        prefix_len = torch.randint(int_low, int_low * 2, size=()).item()
+        prefix_len = min(prefix_len, 225)  # 24000/320 * 3s = 225 frames
+
+        y_prompts = y[:, :prefix_len].unsqueeze(-1)
+        #y_emb = self.ar_audio_embedding(y[:, prefix_len:])
+
+        return y_prompts, prefix_len
+
+
     def forward(
         self,
         x: torch.Tensor,
@@ -773,7 +788,7 @@ class VALLE(VALLF):
             **kwargs,
         )
 
-        self.lang_embedding = TokenEmbedding(d_model, len(LAN_ID_DICT)) 
+        self.lang_embedding = TokenEmbedding(d_model, len(LAN_ID_DICT)+1)  # 加个1,因为我用了1作为起始值
         #self.language_ids = torch.tensor([1, 2])
         
 
@@ -835,25 +850,42 @@ class VALLE(VALLF):
         assert y.ndim == 3, y.shape
         assert y_lens.ndim == 1, y_lens.shape
 
-        p_lens = y_lens
+        #test
+        #p_lens = y_lens
+        #p =y
+
+
 
         # NOTE: x has been padded in TextTokenCollater
         x_mask = make_pad_mask(x_lens).to(x.device)
         y_mask = make_pad_mask(y_lens).to(y.device)
-        p_mask = make_pad_mask(p_lens).to(p.device)
 
         y_mask_int = y_mask.type(torch.int64)
-        p_mask_int = p_mask.type(torch.int64)
 
         text = x
+
+
         codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))
 
-        #test
-        p_prompts_codes = y_prompts_codes.type(torch.int64)
 
         y, targets = self.pad_y_eos(
             codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
         )
+
+
+
+        p,p_len = self.ar_prompt(y,y_lens)
+
+        p_lens = torch.full_like(y_lens, p_len)
+
+        #test
+        p_prompts_codes = p.type(torch.int64)
+
+        p_mask = make_pad_mask(p_lens).to(p.device)
+        p_mask_int = p_mask.type(torch.int64)
+
+        #print(p.size())
+        #print(p_mask_int.size())
 
 
         codes2 = p.type(torch.int64) * (1 - p_mask_int.unsqueeze(dim=-1))
@@ -893,16 +925,9 @@ class VALLE(VALLF):
 
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
-                (0, p_len),
-                value=False,
-            )
-
-            x_attn_mask = F.pad(
-                x_attn_mask
-                (0, y_len),
+                (0, y_len+p_len),
                 value=True,
             )
-
 
             y_attn_mask = F.pad(
                 torch.triu(
@@ -915,7 +940,10 @@ class VALLE(VALLF):
 
 
             p_attn_mask = F.pad(
-                torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
+                torch.triu(
+                    torch.ones(p_len, p_len, dtype=torch.bool, device=x.device),
+                    diagonal=1,
+                ),
                 (x_len, 0),
                 value=False,
             )
@@ -925,7 +953,6 @@ class VALLE(VALLF):
                 (0, y_len),
                 value=True,
             )
-
 
             xpy_attn_mask = torch.concat([x_attn_mask, p_attn_mask, y_attn_mask], dim=0)
 
@@ -954,6 +981,10 @@ class VALLE(VALLF):
 
 
             language_id_exp = self.lang_embedding(language_id)
+
+            #print(language_id.size())
+            #print(language_id_exp.size())
+            #print(y_emb.size())
 
             y_emb = y_emb + language_id_exp
             p_emb = p_emb + language_id_exp

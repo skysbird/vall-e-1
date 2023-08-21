@@ -113,7 +113,7 @@ class SpeechSynthesisDataset(torch.utils.data.Dataset):
             "text_tokens_lens": text_tokens_lens,
             "t_audio_features": target_audio_features,
             "t_audio_features_lens":target_audio_features_lens,
-            "language": torch.IntTensor(language_id)
+            "language": torch.IntTensor(language_id).unsqueeze(-1)
 
         }
 
