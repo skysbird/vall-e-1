@@ -408,13 +408,26 @@ class VALLF(nn.Module):
 
     def ar_prompt(self,y, y_lens):
 
-        # prefix at begining
-        int_low = (0.25 * y_lens.min()).type(torch.int64).item()
-        prefix_len = torch.randint(int_low, int_low * 2, size=()).item()
-        prefix_len = min(prefix_len, 225)  # 24000/320 * 3s = 225 frames
+        prefix_len = min(225, int(0.25 * y_lens.min().item()))
 
-        y_prompts = y[:, :prefix_len].unsqueeze(-1)
+        y_prompts_codes = []
+        for b in range(y.shape[0]):
+             start = self.rng.randint(0, y_lens[b].item() - prefix_len)
+             y_prompts_codes.append(
+                 torch.clone(y[b, start : start + prefix_len])
+             )
+
+        y_prompts_codes = torch.stack(y_prompts_codes, dim=0)
+
+        # prefix at begining
+        #int_low = (0.25 * y_lens.min()).type(torch.int64).item()
+        #prefix_len = torch.randint(int_low, int_low * 2, size=()).item()
+        #prefix_len = min(prefix_len, 225)  # 24000/320 * 3s = 225 frames
+
+        #y_prompts = y[:, :prefix_len].unsqueeze(-1)
         #y_emb = self.ar_audio_embedding(y[:, prefix_len:])
+
+        y_prompts = y_prompts_codes.unsqueeze(-1)
 
         return y_prompts, prefix_len
 
@@ -876,6 +889,7 @@ class VALLE(VALLF):
 
         p,p_len = self.ar_prompt(y,y_lens)
 
+        #p_lens = y_lens
         p_lens = torch.full_like(y_lens, p_len)
 
         #test
@@ -925,9 +939,16 @@ class VALLE(VALLF):
 
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
-                (0, y_len+p_len),
+                (0, p_len),
+                value=False,
+            )
+
+            x_attn_mask = F.pad(
+                x_attn_mask,
+                (0, y_len),
                 value=True,
             )
+
 
             y_attn_mask = F.pad(
                 torch.triu(

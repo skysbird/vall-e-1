@@ -188,8 +188,9 @@ def main():
 
     #print(audio_prompts)
     #cn_text_tokenizer = TextTokenizer(backend=args.text_extractor)
-    text_tokenizer = TextTokenizer(backend="g2p_zh_en",language = 'en-us')
-    cn_text_tokenizer = TextTokenizer(backend="g2p_zh_en",language = 'zh-cn')
+    text_tokenizer = TextTokenizer(backend="espeak")
+    #text_tokenizer = TextTokenizer(backend="g2p_zh_en",language = 'en-us')
+    #cn_text_tokenizer = TextTokenizer(backend="g2p_zh_en",language = 'zh-cn')
 
 
     for n, text in enumerate(args.text.split("|")):
@@ -203,11 +204,11 @@ def main():
             ]
         )
 
-        a =    tokenize_text(
-                    cn_text_tokenizer, text=f"{text_prompts} "
-                )
+        #a =    tokenize_text(
+        #            text_tokenizer, text=f"{text_prompts} "
+        #        )
 
-        print(a)
+        #print(a)
 
         
 
@@ -236,7 +237,7 @@ def main():
                 _, enroll_x_lens = text_collater(
                     [
                         tokenize_text(
-                            cn_text_tokenizer, text=f"{text_prompts}".strip()
+                            text_tokenizer, text=f"{text_prompts}".strip()
                         )
                     ]
                 )
