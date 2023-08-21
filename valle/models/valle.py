@@ -849,7 +849,7 @@ class VALLE(VALLF):
         codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))
 
         #test
-        p_prompts_codes = codes
+        p_prompts_codes = y_prompts_codes.type(torch.int64)
 
         y, targets = self.pad_y_eos(
             codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
