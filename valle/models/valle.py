@@ -828,6 +828,10 @@ class VALLE(VALLF):
             p_lens = prompts_len
             p = p_prompts_codes
 
+            #test
+            p = y
+            p_lens = y_lens
+
         assert y.ndim == 3, y.shape
         assert y_lens.ndim == 1, y_lens.shape
 
@@ -881,11 +885,19 @@ class VALLE(VALLF):
 
             p_len = p_lens.max()
 
+
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
-                (0, y_len+p_len),
+                (0, p_len),
+                value=False,
+            )
+
+            x_attn_mask = F.pad(
+                x_attn_mask
+                (0, y_len),
                 value=True,
             )
+
 
             y_attn_mask = F.pad(
                 torch.triu(
@@ -898,10 +910,7 @@ class VALLE(VALLF):
 
 
             p_attn_mask = F.pad(
-                torch.triu(
-                    torch.ones(p_len, p_len, dtype=torch.bool, device=x.device),
-                    diagonal=1,
-                ),
+                torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
                 (x_len, 0),
                 value=False,
             )
@@ -944,18 +953,6 @@ class VALLE(VALLF):
             y_emb = y_emb + language_id_exp
             p_emb = p_emb + language_id_exp
             
-            #language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
-
-            #print(y_emb.size())
-            #print(language_id_exp.size())
-            # y_emb = y_emb + language_id_exp.unsqueeze(1).expand(-1,y_len,-1)
-            # p_emb = p_emb + language_id_exp.unsqueeze(1).expand(-1,p_len,-1)
-
-            # y_emb = y_emb + language_id_exp
-            #print(y_emb.size())
-            #print(y_len)
-            #print(src_len)
-            #print(language_id.size())
 
             xy_pos = torch.concat([x, p_pos, y_pos], dim=1)
 
