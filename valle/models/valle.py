@@ -33,7 +33,7 @@ from valle.modules.transformer import (
 
 from .macros import NUM_AUDIO_TOKENS, NUM_TEXT_TOKENS
 from .visualizer import visualize
-
+from data.dataset import LAN_ID_DICT
 
 class Transpose(nn.Identity):
     """(N, T, D) -> (N, D, T)"""
@@ -773,7 +773,7 @@ class VALLE(VALLF):
             **kwargs,
         )
 
-        self.lang_embedding = nn.Embedding(d_model, NUM_AUDIO_TOKENS) 
+        self.lang_embedding = TokenEmbedding(d_model, len(LAN_ID_DICT)) 
         #self.language_ids = torch.tensor([1, 2])
         
 
@@ -940,12 +940,16 @@ class VALLE(VALLF):
 
 
             language_id_exp = self.lang_embedding(language_id)
+
+            y_emb = y_emb + language_id_exp
+            p_emb = p_emb + language_id_exp
+            
             #language_id_exp = language_id.unsqueeze(1).unsqueeze(1).expand(-1,y_len,y_emb.shape[2])
 
             #print(y_emb.size())
             #print(language_id_exp.size())
-            y_emb = y_emb + language_id_exp.unsqueeze(1).expand(-1,y_len,-1)
-            p_emb = p_emb + language_id_exp.unsqueeze(1).expand(-1,p_len,-1)
+            # y_emb = y_emb + language_id_exp.unsqueeze(1).expand(-1,y_len,-1)
+            # p_emb = p_emb + language_id_exp.unsqueeze(1).expand(-1,p_len,-1)
 
             # y_emb = y_emb + language_id_exp
             #print(y_emb.size())
@@ -1123,7 +1127,7 @@ class VALLE(VALLF):
             #print(language_id_exp.size())
 
             language_id_exp = self.lang_embedding(language_id)
-            y_emb = y_emb + language_id_exp.unsqueeze(1).expand(-1,y_len,-1)
+            y_emb = y_emb + language_id_exp
 
             #y_emb = y_emb + language_id_exp
             #print(y_emb.size())
