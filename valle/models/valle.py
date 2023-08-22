@@ -856,9 +856,6 @@ class VALLE(VALLF):
             p_lens = prompts_len
             p = p_prompts_codes
 
-            #test
-            p = y
-            p_lens = y_lens
 
         assert y.ndim == 3, y.shape
         assert y_lens.ndim == 1, y_lens.shape
@@ -887,7 +884,7 @@ class VALLE(VALLF):
 
 
 
-        p,p_len = self.ar_prompt(y,y_lens)
+        p,p_len = self.ar_prompt(p,p_lens)
 
         #p_lens = y_lens
         p_lens = torch.full_like(y_lens, p_len)
