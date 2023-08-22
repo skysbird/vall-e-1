@@ -406,6 +406,30 @@ class VALLF(nn.Module):
 
     #y, y_lens, codes, nar_stage, p_prompts_codes
 
+
+    def iar_prompt(self,y, y_len):
+
+        prefix_len = min(225, int(0.25 * y_len))
+
+        start = self.rng.randint(0, y_len - prefix_len)
+        y_prompts =  torch.clone(y[:, start : start + prefix_len])
+
+        print(y_prompts.size())
+
+        # prefix at begining
+        #int_low = (0.25 * y_lens.min()).type(torch.int64).item()
+        #prefix_len = torch.randint(int_low, int_low * 2, size=()).item()
+        #prefix_len = min(prefix_len, 225)  # 24000/320 * 3s = 225 frames
+
+        #y_prompts = y[:, :prefix_len].unsqueeze(-1)
+        #y_emb = self.ar_audio_embedding(y[:, prefix_len:])
+
+        #y_prompts = y_prompts_codes
+        #y_prompts = y_prompts_codes.unsqueeze(-1)
+
+        return y_prompts, prefix_len
+
+
     def ar_prompt(self,y, y_lens):
 
         prefix_len = min(225, int(0.25 * y_lens.min().item()))
@@ -427,7 +451,8 @@ class VALLF(nn.Module):
         #y_prompts = y[:, :prefix_len].unsqueeze(-1)
         #y_emb = self.ar_audio_embedding(y[:, prefix_len:])
 
-        y_prompts = y_prompts_codes.unsqueeze(-1)
+        y_prompts = y_prompts_codes
+        #y_prompts = y_prompts_codes.unsqueeze(-1)
 
         return y_prompts, prefix_len
 
@@ -851,7 +876,7 @@ class VALLE(VALLF):
             y_prompts_codes, y = y.data
             prompts_len, y_lens = y_lens.data
             assert prompts_len.min() == prompts_len.max()
-            assert self.prefix_mode == 4
+            #assert self.prefix_mode == 4
             p_prompts_codes = y_prompts_codes.type(torch.int64)
             p_lens = prompts_len
             p = p_prompts_codes
@@ -886,7 +911,7 @@ class VALLE(VALLF):
 
         p,p_len = self.ar_prompt(p,p_lens)
 
-        #p_lens = y_lens
+        ##p_lens = y_lens
         p_lens = torch.full_like(y_lens, p_len)
 
         #test
@@ -1148,7 +1173,6 @@ class VALLE(VALLF):
         print(y.size())
 
         text_len = x_lens.max()
-        prompts = y
         prefix_len = y.shape[1]
 
         print(f"text_len={text_len}")
@@ -1156,7 +1180,10 @@ class VALLE(VALLF):
 
         # AR Decoder
         # TODO: Managing decoder steps avoid repetitive computation
-        y = prompts[..., 0]
+        y, prefix_len = self.iar_prompt(y,prefix_len)
+        prompts = y
+        y = y[...,0]
+
         t = t[...,0]
 
 
