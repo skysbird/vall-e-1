@@ -983,10 +983,7 @@ class VALLE(VALLF):
 
 
             p_attn_mask = F.pad(
-                torch.triu(
-                    torch.ones(p_len, p_len, dtype=torch.bool, device=x.device),
-                    diagonal=1,
-                ),
+                torch.zeros(p_len, p_len, dtype=torch.bool, device=x.device),
                 (x_len, 0),
                 value=False,
             )
@@ -1230,9 +1227,7 @@ class VALLE(VALLF):
             #print(f"x_len={x_len}")
 
             y_attn_mask = F.pad(
-                torch.triu(
-                    torch.ones(y_len, y_len, dtype=torch.bool,device=x.device), diagonal=1
-                ),
+                torch.zeros(y_len, y_len, dtype=torch.bool,device=x.device), 
                 (x_len, 0),
                 value=False,
             )
