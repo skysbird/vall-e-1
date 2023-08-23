@@ -410,6 +410,7 @@ class VALLF(nn.Module):
     def iar_prompt(self,y, y_len):
 
         prefix_len = min(225, int(0.25 * y_len))
+        prefix_len = 0
 
         start = self.rng.randint(0, y_len - prefix_len)
         y_prompts =  torch.clone(y[:, start : start + prefix_len])
@@ -909,10 +910,10 @@ class VALLE(VALLF):
 
 
 
-        p,p_len = self.ar_prompt(p,p_lens)
+        #p,p_len = self.ar_prompt(p,p_lens)
 
         ##p_lens = y_lens
-        p_lens = torch.full_like(y_lens, p_len)
+        #p_lens = torch.full_like(y_lens, p_len)
 
         #test
         p_prompts_codes = p.type(torch.int64)
@@ -1177,7 +1178,7 @@ class VALLE(VALLF):
 
         # AR Decoder
         # TODO: Managing decoder steps avoid repetitive computation
-        y, prefix_len = self.iar_prompt(y,prefix_len)
+        #y, prefix_len = self.iar_prompt(y,prefix_len)
         prompts = y
         y = y[...,0]
 
@@ -1219,9 +1220,16 @@ class VALLE(VALLF):
             y_len = y.shape[1]
             x_attn_mask_pad = F.pad(
                 x_attn_mask,
-                (0, y_len+t_len),
+                (0, y_len),
+                value=False,
+            )
+
+            x_attn_mask_pad = F.pad(
+                x_attn_mask_pad,
+                (0, t_len),
                 value=True,
             )
+
 
             #print(f"y_len={y_len}")
             #print(f"x_len={x_len}")
