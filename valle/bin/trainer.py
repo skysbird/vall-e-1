@@ -272,6 +272,15 @@ def get_parser():
         help="perform OOM check on dataloader batches before starting training.",
     )
 
+    parser.add_argument(
+        "--rank",
+        type=int,
+        default=0,
+        help="""gpu id
+        """,
+    )
+
+
     add_model_arguments(parser)
 
     return parser
@@ -1165,7 +1174,7 @@ def main():
     if world_size > 1:
         mp.spawn(run, args=(world_size, args), nprocs=world_size, join=True)
     else:
-        run(rank=0, world_size=1, args=args)
+        run(rank=args.rank, world_size=1, args=args)
 
 
 torch.set_num_threads(1)
