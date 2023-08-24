@@ -275,7 +275,7 @@ def get_parser():
     parser.add_argument(
         "--rank",
         type=int,
-        default=0,
+        default=None,
         help="""gpu id
         """,
     )
@@ -904,7 +904,10 @@ def run(rank, world_size, args):
 
     device = torch.device("cpu")
     if torch.cuda.is_available():
-        device = torch.device("cuda", rank)
+        if args.rank is not None: 
+            device = torch.device("cuda", args.rank)
+        else:
+            device = torch.device("cuda", rank)
         # https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices
         torch.backends.cudnn.allow_tf32 = True
         torch.backends.cuda.matmul.allow_tf32 = True
@@ -1174,7 +1177,7 @@ def main():
     if world_size > 1:
         mp.spawn(run, args=(world_size, args), nprocs=world_size, join=True)
     else:
-        run(rank=args.rank, world_size=1, args=args)
+        run(rank=0, world_size=1, args=args)
 
 
 torch.set_num_threads(1)
