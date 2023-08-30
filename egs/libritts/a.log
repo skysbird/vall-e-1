@@ -1,0 +1,932 @@
+2023-08-21 15:16:05,439 INFO [trainer.py:884] Training started
+2023-08-21 15:16:05,440 INFO [trainer.py:903] Device: cuda:0
+2023-08-21 15:16:05,440 INFO [trainer.py:904] {'best_train_loss': inf, 'best_valid_loss': inf, 'best_train_epoch': -1, 'best_valid_epoch': -1, 'batch_idx_train': 0, 'log_interval': 100, 'reset_interval': 200, 'valid_interval': 20000, 'env_info': {'k2-version': '1.23.4', 'k2-build-type': 'Release', 'k2-with-cuda': True, 'k2-git-sha1': '8802dac96a4eabfc90e967dc8dd967f06b21985e', 'k2-git-date': 'Fri Feb 24 17:56:13 2023', 'lhotse-version': '1.16.0.dev+git.4b443208.dirty', 'torch-version': '1.13.1+cu116', 'torch-cuda-available': True, 'torch-cuda-version': '11.6', 'python-version': '3.1', 'icefall-git-branch': 'e-x', 'icefall-git-sha1': 'b63d8c0-dirty', 'icefall-git-date': 'Mon Aug 21 11:57:05 2023', 'icefall-path': '/home/jovyan/icefall', 'k2-path': '/opt/conda/envs/pytorch/lib/python3.10/site-packages/k2/__init__.py', 'lhotse-path': '/opt/conda/envs/pytorch/lib/python3.10/site-packages/lhotse-1.16.0.dev0+git.4b443208.dirty-py3.10.egg/lhotse/__init__.py', 'hostname': 'nb-b2131-y22fwtuo-0', 'IP address': '10.10.11.212'}, 'world_size': 1, 'master_port': 12354, 'tensorboard': True, 'num_epochs': 40, 'start_epoch': 1, 'start_batch': 0, 'exp_dir': PosixPath('exp/valle'), 'optimizer_name': 'ScaledAdam', 'scheduler_name': 'Eden', 'base_lr': 0.05, 'warmup_steps': 200, 'seed': 42, 'inf_check': False, 'save_every_n': 10000, 'keep_last_k': 20, 'average_period': 0, 'accumulate_grad_steps': 4, 'dtype': 'bfloat16', 'filter_min_duration': 0.5, 'filter_max_duration': 14.0, 'train_stage': 1, 'visualize': False, 'oom_check': False, 'model_name': 'valle', 'decoder_dim': 1024, 'nhead': 16, 'num_decoder_layers': 12, 'scale_factor': 1.0, 'norm_first': True, 'add_prenet': False, 'prefix_mode': 1, 'share_embedding': True, 'prepend_bos': False, 'num_quantizers': 8, 'scaling_xformers': False, 'manifest_dir': PosixPath('data/tokenized'), 'max_duration': 80, 'bucketing_sampler': True, 'num_buckets': 6, 'concatenate_cuts': False, 'duration_factor': 1.0, 'gap': 0.1, 'on_the_fly_feats': False, 'shuffle': True, 'drop_last': False, 'return_cuts': True, 'num_workers': 8, 'enable_spec_aug': False, 'spec_aug_time_warp_factor': 80, 'input_strategy': 'PrecomputedFeatures', 'dataset': 'libritts', 'text_tokens': 'data/tokenized/unique_text_tokens.k2symbols', 'sampling_rate': 24000}
+2023-08-21 15:16:05,440 INFO [trainer.py:906] About to create model
+VALLE(
+  (ar_text_embedding): TokenEmbedding(
+    (dropout): Dropout(p=0.0, inplace=False)
+    (word_embeddings): Embedding(512, 1024)
+  )
+  (nar_text_embedding): TokenEmbedding(
+    (dropout): Dropout(p=0.0, inplace=False)
+    (word_embeddings): Embedding(512, 1024)
+  )
+  (ar_audio_embedding): TokenEmbedding(
+    (dropout): Dropout(p=0.0, inplace=False)
+    (word_embeddings): Embedding(1025, 1024)
+  )
+  (ar_text_prenet): Identity()
+  (ar_audio_prenet): Identity()
+  (ar_text_position): SinePositionalEmbedding(
+    (dropout): Dropout(p=0.1, inplace=False)
+  )
+  (ar_audio_position): SinePositionalEmbedding(
+    (dropout): Dropout(p=0.1, inplace=False)
+  )
+  (ar_decoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (1): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (2): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (3): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (4): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (5): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (6): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (7): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (8): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (9): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (10): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+      (11): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        (norm2): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+      )
+    )
+    (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+  )
+  (ar_predict_layer): Linear(in_features=1024, out_features=1025, bias=False)
+  (ar_accuracy_metric): MulticlassAccuracy()
+  (nar_audio_embeddings): ModuleList(
+    (0): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1025, 1024)
+    )
+    (1): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1024, 1024)
+    )
+    (2): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1024, 1024)
+    )
+    (3): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1024, 1024)
+    )
+    (4): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1024, 1024)
+    )
+    (5): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1024, 1024)
+    )
+    (6): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1024, 1024)
+    )
+    (7): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1024, 1024)
+    )
+  )
+  (nar_text_prenet): Identity()
+  (nar_audio_prenet): Identity()
+  (nar_text_position): SinePositionalEmbedding(
+    (dropout): Dropout(p=0.0, inplace=False)
+  )
+  (nar_audio_position): SinePositionalEmbedding(
+    (dropout): Dropout(p=0.1, inplace=False)
+  )
+  (nar_decoder): TransformerEncoder(
+    (layers): ModuleList(
+      (0): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (1): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (2): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (3): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (4): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (5): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (6): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (7): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (8): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (9): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (10): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (11): TransformerEncoderLayer(
+        (self_attn): MultiheadAttention(
+          (out_proj): NonDynamicallyQuantizableLinear(in_features=1024, out_features=1024, bias=True)
+        )
+        (linear1): Linear(in_features=1024, out_features=4096, bias=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+        (linear2): Linear(in_features=4096, out_features=1024, bias=True)
+        (dropout1): Dropout(p=0.1, inplace=False)
+        (dropout2): Dropout(p=0.1, inplace=False)
+        (norm1): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm2): AdaptiveLayerNorm(
+          (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+          (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+    )
+    (norm): AdaptiveLayerNorm(
+      (project_layer): Linear(in_features=1024, out_features=2048, bias=True)
+      (norm): LayerNorm((1024,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (nar_predict_layers): ModuleList(
+    (0): Linear(in_features=1024, out_features=1024, bias=False)
+    (1): Linear(in_features=1024, out_features=1024, bias=False)
+    (2): Linear(in_features=1024, out_features=1024, bias=False)
+    (3): Linear(in_features=1024, out_features=1024, bias=False)
+    (4): Linear(in_features=1024, out_features=1024, bias=False)
+    (5): Linear(in_features=1024, out_features=1024, bias=False)
+    (6): Linear(in_features=1024, out_features=1024, bias=False)
+  )
+  (nar_stage_embeddings): ModuleList(
+    (0): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1, 1024)
+    )
+    (1): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1, 1024)
+    )
+    (2): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1, 1024)
+    )
+    (3): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1, 1024)
+    )
+    (4): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1, 1024)
+    )
+    (5): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1, 1024)
+    )
+    (6): TokenEmbedding(
+      (dropout): Dropout(p=0.0, inplace=False)
+      (word_embeddings): Embedding(1, 1024)
+    )
+  )
+  (nar_accuracy_metric): MulticlassAccuracy()
+  (lang_embedding): TokenEmbedding(
+    (dropout): Dropout(p=0.0, inplace=False)
+    (word_embeddings): Embedding(3, 1024)
+  )
+)2023-08-21 15:16:06,119 INFO [trainer.py:913] Number of model parameters: 367389700
+2023-08-21 15:16:07,902 INFO [datamodule.py:417] About to get train cuts
+2023-08-21 15:16:33,352 INFO [datamodule.py:424] About to get dev cuts
+2023-08-21 15:16:33,794 INFO [datamodule.py:276] Disable SpecAugment
+2023-08-21 15:16:33,795 INFO [datamodule.py:278] About to create train dataset
+2023-08-21 15:16:33,796 INFO [datamodule.py:307] Using DynamicBucketingSampler
+/opt/conda/envs/pytorch/lib/python3.10/site-packages/lhotse-1.16.0.dev0+git.4b443208.dirty-py3.10.egg/lhotse/dataset/sampling/dynamic_bucketing.py:120: UserWarning: You are using DynamicBucketingSampler with an eagerly read CutSet. You won't see any memory/speed benefits with that setup. Either use 'CutSet.from_jsonl_lazy' to read the CutSet lazily, or use a BucketingSampler instead.
+2023-08-21 15:16:33,819 INFO [datamodule.py:327] About to create train dataloader
+2023-08-21 15:16:33,819 INFO [datamodule.py:359] About to create dev dataset
+2023-08-21 15:16:34,111 INFO [datamodule.py:379] About to create dev dataloader
+
+ AR parameter: ar_text_embedding.word_embeddings.weight
+ AR parameter: ar_audio_embedding.word_embeddings.weight
+ AR parameter: ar_text_position.alpha
+ AR parameter: ar_audio_position.alpha
+ AR parameter: ar_decoder.layers.0.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.0.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.0.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.0.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.0.linear1.weight
+ AR parameter: ar_decoder.layers.0.linear1.bias
+ AR parameter: ar_decoder.layers.0.linear2.weight
+ AR parameter: ar_decoder.layers.0.linear2.bias
+ AR parameter: ar_decoder.layers.0.norm1.weight
+ AR parameter: ar_decoder.layers.0.norm1.bias
+ AR parameter: ar_decoder.layers.0.norm2.weight
+ AR parameter: ar_decoder.layers.0.norm2.bias
+ AR parameter: ar_decoder.layers.1.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.1.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.1.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.1.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.1.linear1.weight
+ AR parameter: ar_decoder.layers.1.linear1.bias
+ AR parameter: ar_decoder.layers.1.linear2.weight
+ AR parameter: ar_decoder.layers.1.linear2.bias
+ AR parameter: ar_decoder.layers.1.norm1.weight
+ AR parameter: ar_decoder.layers.1.norm1.bias
+ AR parameter: ar_decoder.layers.1.norm2.weight
+ AR parameter: ar_decoder.layers.1.norm2.bias
+ AR parameter: ar_decoder.layers.2.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.2.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.2.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.2.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.2.linear1.weight
+ AR parameter: ar_decoder.layers.2.linear1.bias
+ AR parameter: ar_decoder.layers.2.linear2.weight
+ AR parameter: ar_decoder.layers.2.linear2.bias
+ AR parameter: ar_decoder.layers.2.norm1.weight
+ AR parameter: ar_decoder.layers.2.norm1.bias
+ AR parameter: ar_decoder.layers.2.norm2.weight
+ AR parameter: ar_decoder.layers.2.norm2.bias
+ AR parameter: ar_decoder.layers.3.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.3.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.3.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.3.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.3.linear1.weight
+ AR parameter: ar_decoder.layers.3.linear1.bias
+ AR parameter: ar_decoder.layers.3.linear2.weight
+ AR parameter: ar_decoder.layers.3.linear2.bias
+ AR parameter: ar_decoder.layers.3.norm1.weight
+ AR parameter: ar_decoder.layers.3.norm1.bias
+ AR parameter: ar_decoder.layers.3.norm2.weight
+ AR parameter: ar_decoder.layers.3.norm2.bias
+ AR parameter: ar_decoder.layers.4.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.4.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.4.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.4.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.4.linear1.weight
+ AR parameter: ar_decoder.layers.4.linear1.bias
+ AR parameter: ar_decoder.layers.4.linear2.weight
+ AR parameter: ar_decoder.layers.4.linear2.bias
+ AR parameter: ar_decoder.layers.4.norm1.weight
+ AR parameter: ar_decoder.layers.4.norm1.bias
+ AR parameter: ar_decoder.layers.4.norm2.weight
+ AR parameter: ar_decoder.layers.4.norm2.bias
+ AR parameter: ar_decoder.layers.5.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.5.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.5.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.5.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.5.linear1.weight
+ AR parameter: ar_decoder.layers.5.linear1.bias
+ AR parameter: ar_decoder.layers.5.linear2.weight
+ AR parameter: ar_decoder.layers.5.linear2.bias
+ AR parameter: ar_decoder.layers.5.norm1.weight
+ AR parameter: ar_decoder.layers.5.norm1.bias
+ AR parameter: ar_decoder.layers.5.norm2.weight
+ AR parameter: ar_decoder.layers.5.norm2.bias
+ AR parameter: ar_decoder.layers.6.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.6.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.6.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.6.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.6.linear1.weight
+ AR parameter: ar_decoder.layers.6.linear1.bias
+ AR parameter: ar_decoder.layers.6.linear2.weight
+ AR parameter: ar_decoder.layers.6.linear2.bias
+ AR parameter: ar_decoder.layers.6.norm1.weight
+ AR parameter: ar_decoder.layers.6.norm1.bias
+ AR parameter: ar_decoder.layers.6.norm2.weight
+ AR parameter: ar_decoder.layers.6.norm2.bias
+ AR parameter: ar_decoder.layers.7.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.7.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.7.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.7.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.7.linear1.weight
+ AR parameter: ar_decoder.layers.7.linear1.bias
+ AR parameter: ar_decoder.layers.7.linear2.weight
+ AR parameter: ar_decoder.layers.7.linear2.bias
+ AR parameter: ar_decoder.layers.7.norm1.weight
+ AR parameter: ar_decoder.layers.7.norm1.bias
+ AR parameter: ar_decoder.layers.7.norm2.weight
+ AR parameter: ar_decoder.layers.7.norm2.bias
+ AR parameter: ar_decoder.layers.8.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.8.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.8.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.8.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.8.linear1.weight
+ AR parameter: ar_decoder.layers.8.linear1.bias
+ AR parameter: ar_decoder.layers.8.linear2.weight
+ AR parameter: ar_decoder.layers.8.linear2.bias
+ AR parameter: ar_decoder.layers.8.norm1.weight
+ AR parameter: ar_decoder.layers.8.norm1.bias
+ AR parameter: ar_decoder.layers.8.norm2.weight
+ AR parameter: ar_decoder.layers.8.norm2.bias
+ AR parameter: ar_decoder.layers.9.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.9.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.9.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.9.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.9.linear1.weight
+ AR parameter: ar_decoder.layers.9.linear1.bias
+ AR parameter: ar_decoder.layers.9.linear2.weight
+ AR parameter: ar_decoder.layers.9.linear2.bias
+ AR parameter: ar_decoder.layers.9.norm1.weight
+ AR parameter: ar_decoder.layers.9.norm1.bias
+ AR parameter: ar_decoder.layers.9.norm2.weight
+ AR parameter: ar_decoder.layers.9.norm2.bias
+ AR parameter: ar_decoder.layers.10.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.10.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.10.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.10.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.10.linear1.weight
+ AR parameter: ar_decoder.layers.10.linear1.bias
+ AR parameter: ar_decoder.layers.10.linear2.weight
+ AR parameter: ar_decoder.layers.10.linear2.bias
+ AR parameter: ar_decoder.layers.10.norm1.weight
+ AR parameter: ar_decoder.layers.10.norm1.bias
+ AR parameter: ar_decoder.layers.10.norm2.weight
+ AR parameter: ar_decoder.layers.10.norm2.bias
+ AR parameter: ar_decoder.layers.11.self_attn.in_proj_weight
+ AR parameter: ar_decoder.layers.11.self_attn.in_proj_bias
+ AR parameter: ar_decoder.layers.11.self_attn.out_proj.weight
+ AR parameter: ar_decoder.layers.11.self_attn.out_proj.bias
+ AR parameter: ar_decoder.layers.11.linear1.weight
+ AR parameter: ar_decoder.layers.11.linear1.bias
+ AR parameter: ar_decoder.layers.11.linear2.weight
+ AR parameter: ar_decoder.layers.11.linear2.bias
+ AR parameter: ar_decoder.layers.11.norm1.weight
+ AR parameter: ar_decoder.layers.11.norm1.bias
+ AR parameter: ar_decoder.layers.11.norm2.weight
+ AR parameter: ar_decoder.layers.11.norm2.bias
+ AR parameter: ar_decoder.norm.weight
+ AR parameter: ar_decoder.norm.bias
+ AR parameter: ar_predict_layer.weight
+2023-08-21 15:16:55,204 INFO [trainer.py:774] Epoch 1, batch 100, train_loss[loss=4.941, ArTop10Accuracy=0.3521, over 5042.00 frames. ], tot_loss[loss=5.652, ArTop10Accuracy=0.2409, over 1914.53 frames. ], batch size: 7, lr: 3.75e-02
+2023-08-21 15:17:02,001 INFO [trainer.py:1106] Saving batch to exp/valle/batch-bdd640fb-0667-1ad1-1c80-317fa3b1799d.pt
+torch.Size([9, 150, 1])
+torch.Size([9, 150])
+torch.Size([9, 184, 1])
+torch.Size([9, 184])
+torch.Size([25, 16, 1])
+torch.Size([25, 16])
+torch.Size([11, 167, 1])
+torch.Size([11, 167])
+torch.Size([7, 216, 1])
+torch.Size([7, 216])
+torch.Size([9, 148, 1])
+torch.Size([9, 148])
+torch.Size([9, 225, 1])
+torch.Size([9, 225])
+torch.Size([11, 149, 1])
+torch.Size([11, 149])
+torch.Size([9, 131, 1])
+torch.Size([9, 131])
+torch.Size([12, 129, 1])
+torch.Size([12, 129])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([16, 114, 1])
+torch.Size([16, 114])
+torch.Size([8, 168, 1])
+torch.Size([8, 168])
+torch.Size([16, 104, 1])
+torch.Size([16, 104])
+torch.Size([11, 115, 1])
+torch.Size([11, 115])
+torch.Size([16, 84, 1])
+torch.Size([16, 84])
+torch.Size([25, 23, 1])
+torch.Size([25, 23])
+torch.Size([7, 166, 1])
+torch.Size([7, 166])
+torch.Size([11, 184, 1])
+torch.Size([11, 184])
+torch.Size([8, 225, 1])
+torch.Size([8, 225])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([16, 68, 1])
+torch.Size([16, 68])
+torch.Size([11, 121, 1])
+torch.Size([11, 121])
+torch.Size([25, 11, 1])
+torch.Size([25, 11])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([24, 14, 1])
+torch.Size([24, 14])
+torch.Size([6, 225, 1])
+torch.Size([6, 225])
+torch.Size([11, 132, 1])
+torch.Size([11, 132])
+torch.Size([9, 225, 1])
+torch.Size([9, 225])
+torch.Size([7, 169, 1])
+torch.Size([7, 169])
+torch.Size([25, 11, 1])
+torch.Size([25, 11])
+torch.Size([11, 98, 1])
+torch.Size([11, 98])
+torch.Size([9, 225, 1])
+torch.Size([9, 225])
+torch.Size([11, 137, 1])
+torch.Size([11, 137])
+torch.Size([8, 225, 1])
+torch.Size([8, 225])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([16, 90, 1])
+torch.Size([16, 90])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([9, 225, 1])
+torch.Size([9, 225])
+torch.Size([9, 147, 1])
+torch.Size([9, 147])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([12, 133, 1])
+torch.Size([12, 133])
+torch.Size([25, 13, 1])
+torch.Size([25, 13])
+torch.Size([7, 203, 1])
+torch.Size([7, 203])
+torch.Size([25, 14, 1])
+torch.Size([25, 14])
+torch.Size([26, 21, 1])
+torch.Size([26, 21])
+torch.Size([6, 225, 1])
+torch.Size([6, 225])
+torch.Size([9, 174, 1])
+torch.Size([9, 174])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([6, 225, 1])
+torch.Size([6, 225])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([25, 34, 1])
+torch.Size([25, 34])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([9, 184, 1])
+torch.Size([9, 184])
+torch.Size([11, 152, 1])
+torch.Size([11, 152])
+torch.Size([16, 98, 1])
+torch.Size([16, 98])
+torch.Size([6, 225, 1])
+torch.Size([6, 225])
+torch.Size([12, 146, 1])
+torch.Size([12, 146])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([25, 10, 1])
+torch.Size([25, 10])
+torch.Size([16, 114, 1])
+torch.Size([16, 114])
+torch.Size([7, 222, 1])
+torch.Size([7, 222])
+torch.Size([15, 79, 1])
+torch.Size([15, 79])
+torch.Size([16, 119, 1])
+torch.Size([16, 119])
+torch.Size([16, 116, 1])
+torch.Size([16, 116])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([9, 147, 1])
+torch.Size([9, 147])
+torch.Size([25, 17, 1])
+torch.Size([25, 17])
+torch.Size([25, 20, 1])
+torch.Size([25, 20])
+torch.Size([11, 99, 1])
+torch.Size([11, 99])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([9, 156, 1])
+torch.Size([9, 156])
+torch.Size([25, 26, 1])
+torch.Size([25, 26])
+torch.Size([11, 173, 1])
+torch.Size([11, 173])
+torch.Size([7, 202, 1])
+torch.Size([7, 202])
+torch.Size([11, 174, 1])
+torch.Size([11, 174])
+torch.Size([6, 221, 1])
+torch.Size([6, 221])
+torch.Size([24, 16, 1])
+torch.Size([24, 16])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([11, 121, 1])
+torch.Size([11, 121])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([16, 112, 1])
+torch.Size([16, 112])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([12, 161, 1])
+torch.Size([12, 161])
+torch.Size([9, 208, 1])
+torch.Size([9, 208])
+torch.Size([25, 22, 1])
+torch.Size([25, 22])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([9, 225, 1])
+torch.Size([9, 225])
+torch.Size([12, 154, 1])
+torch.Size([12, 154])
+torch.Size([7, 187, 1])
+torch.Size([7, 187])
+torch.Size([16, 117, 1])
+torch.Size([16, 117])
+torch.Size([12, 123, 1])
+torch.Size([12, 123])
+torch.Size([16, 79, 1])
+torch.Size([16, 79])
+torch.Size([16, 101, 1])
+torch.Size([16, 101])
+torch.Size([16, 94, 1])
+torch.Size([16, 94])
+torch.Size([28, 24, 1])
+torch.Size([28, 24])
+torch.Size([7, 165, 1])
+torch.Size([7, 165])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([11, 107, 1])
+torch.Size([11, 107])
+torch.Size([9, 157, 1])
+torch.Size([9, 157])
+torch.Size([26, 21, 1])
+torch.Size([26, 21])
+torch.Size([27, 21, 1])
+torch.Size([27, 21])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([16, 79, 1])
+torch.Size([16, 79])
+torch.Size([16, 86, 1])
+torch.Size([16, 86])
+torch.Size([25, 11, 1])
+torch.Size([25, 11])
+torch.Size([25, 18, 1])
+torch.Size([25, 18])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([7, 217, 1])
+torch.Size([7, 217])
+torch.Size([6, 225, 1])
+torch.Size([6, 225])
+torch.Size([9, 225, 1])
+torch.Size([9, 225])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([7, 169, 1])
+torch.Size([7, 169])
+torch.Size([11, 148, 1])
+torch.Size([11, 148])
+torch.Size([7, 225, 1])
+torch.Size([7, 225])
+torch.Size([15, 119, 1])
+torch.Size([15, 119])
+torch.Size([15, 76, 1])
+torch.Size([15, 76])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([8, 218, 1])
+torch.Size([8, 218])
+torch.Size([10, 180, 1])
+torch.Size([10, 180])
+torch.Size([7, 203, 1])
+torch.Size([7, 203])
+torch.Size([12, 146, 1])
+torch.Size([12, 146])
+torch.Size([9, 170, 1])
+torch.Size([9, 170])
+torch.Size([10, 219, 1])
+torch.Size([10, 219])
+torch.Size([6, 225, 1])
+torch.Size([6, 225])
+torch.Size([6, 225, 1])
+torch.Size([6, 225])
+torch.Size([5, 225, 1])
+torch.Size([5, 225])
+torch.Size([12, 165, 1])
+torch.Size([12, 165])
+torch.Size([24, 16, 1])
+torch.Size([24, 16])
+torch.Size([11, 106, 1])
+torch.Size([11, 106])
+torch.Size([7, 164, 1])
+torch.Size([7, 164])
+Traceback (most recent call last):
+  File "/data/sky/vall-e/egs/libritts/bin/trainer.py", line 1175, in <module>
+    main()
+  File "/data/sky/vall-e/egs/libritts/bin/trainer.py", line 1168, in main
+    run(rank=0, world_size=1, args=args)
+  File "/data/sky/vall-e/egs/libritts/bin/trainer.py", line 1057, in run
+    train_one_epoch(
+  File "/data/sky/vall-e/egs/libritts/bin/trainer.py", line 677, in train_one_epoch
+    scaler.scale(loss).backward()
+  File "/opt/conda/envs/pytorch/lib/python3.10/site-packages/torch/_tensor.py", line 488, in backward
+    torch.autograd.backward(
+  File "/opt/conda/envs/pytorch/lib/python3.10/site-packages/torch/autograd/__init__.py", line 197, in backward
+    Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt
